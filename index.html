@@ -3,93 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE CURSED PUZZLE</title>
+    <title>THE LABYRINTH AWAITS</title>
     <style>
+        :root {
+            --blood: #8a0303;
+            --glow: #0f0;
+            --void: #000;
+        }
         body {
-            background: #000;
-            color: #0f0;
-            font-family: 'Courier New', monospace;
+            background: var(--void);
+            color: var(--glow);
+            font-family: 'Old English Text MT', serif;
             text-align: center;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             overflow: hidden;
-            cursor: crosshair;
+            cursor: none;
+            height: 100vh;
+            user-select: none;
         }
-        #riddle-box {
-            border: 2px solid #f00;
-            padding: 20px;
-            max-width: 600px;
-            margin: 100px auto;
-            background: #111;
+        #custom-cursor {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="%238a0303" d="M16 2C8.3 2 2 8.3 2 16s6.3 14 14 14 14-6.3 14-14S23.7 2 16 2zm0 24c-5.5 0-10-4.5-10-10S10.5 6 16 6s10 4.5 10 10-4.5 10-10 10z"/></svg>') no-repeat;
+            pointer-events: none;
+            z-index: 99999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.05s;
+        }
+        #level-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             position: relative;
         }
+        .level {
+            display: none;
+            max-width: 800px;
+            padding: 30px;
+            border: 3px solid var(--blood);
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 20px var(--blood);
+            position: relative;
+        }
+        .active-level {
+            display: block;
+            animation: fadeIn 2s;
+        }
+        h1 {
+            font-size: 3rem;
+            text-shadow: 0 0 10px var(--glow);
+            margin-bottom: 30px;
+            letter-spacing: 3px;
+        }
+        .riddle-text {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            min-height: 120px;
+        }
         #answer-input {
-            background: #000;
-            color: #0f0;
-            border: 1px solid #f00;
-            padding: 10px;
-            font-size: 16px;
-            width: 80%;
-            margin-top: 20px;
+            background: transparent;
+            color: var(--glow);
+            border: 1px solid var(--blood);
+            padding: 15px;
+            font-size: 1.2rem;
+            width: 70%;
+            margin: 20px 0;
+            font-family: inherit;
+            text-align: center;
         }
         #submit-btn {
-            background: #300;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            margin-top: 10px;
-            cursor: pointer;
+            background: linear-gradient(to bottom, #300, #500);
+            color: white;
+            border: 2px solid var(--blood);
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            cursor: none;
+            transition: all 0.3s;
             font-weight: bold;
+            letter-spacing: 1px;
         }
         #submit-btn:hover {
-            background: #f00;
+            background: linear-gradient(to bottom, #500, #700);
+            box-shadow: 0 0 15px var(--blood);
         }
-        .glitch {
-            animation: glitch-effect 0.3s infinite;
-        }
-        @keyframes glitch-effect {
-            0% { text-shadow: 2px 0 #0f0, -2px 0 #f00; }
-            25% { text-shadow: -2px 0 #0f0, 2px 0 #f00; }
-            50% { text-shadow: 2px 0 #00f, -2px 0 #0f0; }
-            75% { text-shadow: -2px 0 #00f, 2px 0 #f00; }
-            100% { text-shadow: 2px 0 #0f0, -2px 0 #00f; }
-        }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         #screamer {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: 9999;
             object-fit: cover;
+            z-index: 99998;
+        }
+        #eyes {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 99997;
+        }
+        .eye {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            border: 3px solid var(--blood);
+        }
+        .pupil {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #000;
+            border-radius: 50%;
+            top: 20px;
+            left: 20px;
+        }
+        #corruption-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            pointer-events: none;
+            z-index: 99996;
+        }
+        .blood-drop {
+            position: absolute;
+            width: 5px;
+            height: 10px;
+            background: var(--blood);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            animation: drip 5s linear forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes drip {
+            0% { transform: translateY(-100px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-5px, 5px); }
+            40% { transform: translate(-5px, -5px); }
+            60% { transform: translate(5px, 5px); }
+            80% { transform: translate(5px, -5px); }
+            100% { transform: translate(0); }
+        }
+        .glitch-effect {
+            animation: glitch 0.5s infinite;
+        }
+        #timer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            color: var(--blood);
+        }
+        #hint-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: transparent;
+            color: var(--glow);
+            border: 1px solid var(--glow);
+            padding: 5px 10px;
+            cursor: none;
         }
     </style>
 </head>
 <body>
-    <div id="riddle-box">
-        <h1 class="glitch">THE CURSED PUZZLE</h1>
-        <p>Answer correctly... or face the horror.</p>
-        
-        <div id="riddle">
-            <p><em>"I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?"</em></p>
-            <input type="text" id="answer-input" placeholder="Your answer...">
+    <div id="custom-cursor"></div>
+    <div id="eyes"></div>
+    <div id="corruption-overlay"></div>
+
+    <div id="level-container">
+        <!-- Level 0 - Warning -->
+        <div class="level" id="level-0">
+            <h1>DO NOT PROCEED</h1>
+            <div class="riddle-text">
+                <p>This is your final warning. Turn back now.</p>
+                <p>The Labyrinth consumes all who enter.</p>
+                <p>No soul has ever escaped.</p>
+            </div>
+            <button id="enter-btn">ENTER IF YOU DARE</button>
+        </div>
+
+        <!-- Level 1 - First Riddle -->
+        <div class="level" id="level-1">
+            <h1>LEVEL 1: THE GATE</h1>
+            <div class="riddle-text">
+                <p>"I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?"</p>
+                <p class="cipher">Clue: Rot13 - "Rpub"</p>
+            </div>
+            <input type="text" id="answer-input" placeholder="Speak your answer...">
             <button id="submit-btn">SUBMIT</button>
+            <div id="timer">01:00</div>
+            <button id="hint-btn">HINT (Cost: 15s)</button>
         </div>
 
+        <!-- Level 2 - Second Riddle -->
+        <div class="level" id="level-2">
+            <h1>LEVEL 2: THE ABYSS</h1>
+            <div class="riddle-text">
+                <p>"The more you take, the more you leave behind. What am I?"</p>
+                <p class="cipher">Clue: Caesar Shift +3 - "Wkh vwhsv"</p>
+            </div>
+            <input type="text" id="answer-input" placeholder="Speak your answer...">
+            <button id="submit-btn">SUBMIT</button>
+            <div id="timer">00:45</div>
+            <button id="hint-btn">HINT (Cost: 10s)</button>
+        </div>
+
+        <!-- Level 3 - Third Riddle -->
+        <div class="level" id="level-3">
+            <h1>LEVEL 3: THE VOID</h1>
+            <div class="riddle-text">
+                <p>"I'm light as a feather, yet the strongest man can't hold me for more than a minute. What am I?"</p>
+                <p class="cipher">Clue: Atbash - "Zmbv"</p>
+            </div>
+            <input type="text" id="answer-input" placeholder="Speak your answer...">
+            <button id="submit-btn">SUBMIT</button>
+            <div id="timer">00:30</div>
+            <button id="hint-btn">HINT (Cost: 5s)</button>
+        </div>
+
+        <!-- Level 4 - Fourth Riddle -->
+        <div class="level" id="level-4">
+            <h1>LEVEL 4: THE DESCENT</h1>
+            <div class="riddle-text">
+                <p>"I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?"</p>
+                <p class="cipher">Clue: Vigenère (key: DARK) - "Fpzq"</p>
+            </div>
+            <input type="text" id="answer-input" placeholder="Speak your answer...">
+            <button id="submit-btn">SUBMIT</button>
+            <div id="timer">00:25</div>
+        </div>
+
+        <!-- Level 5 - Fifth Riddle -->
+        <div class="level" id="level-5">
+            <h1>LEVEL 5: THE NIGHTMARE</h1>
+            <div class="riddle-text">
+                <p>"What can run but never walks, has a mouth but never talks, has a head but never weeps, has a bed but never sleeps?"</p>
+                <p class="cipher">Clue: Binary - 01010010 01101001 01110110 01100101 01110010</p>
+            </div>
+            <input type="text" id="answer-input" placeholder="Speak your answer...">
+            <button id="submit-btn">SUBMIT</button>
+            <div id="timer">00:20</div>
+        </div>
+
+        <!-- Level 6 - Sixth Riddle -->
+        <div class="level" id="level-6">
+            <h1>LEVEL 6: THE MAW</h1>
+            <div class="riddle-text">
+                <p>"I'm alive without breath, and cold as death. I'm never thirsty, but always drinking. What am I?"</p>
+                <p class="cipher">Clue: Hex - 46 69 73 68</p>
+            </div>
+            <input type="text" id="answer-input" placeholder="Speak your answer...">
+            <button id="submit-btn">SUBMIT</button>
+            <div id="timer">00:15</div>
+        </div>
+
+        <!-- Level 7 - Final Challenge -->
+        <div class="level" id="level-7">
+            <h1>FINAL LEVEL: THE HEART</h1>
+            <div class="riddle-text">
+                <p>"What can you hold in your right hand, but never in your left hand?"</p>
+                <p class="cipher">Clue: Base64 - "WW91ciBsZWZ0IGVsYm93"</p>
+            </div>
+            <input type="text" id="answer-input" placeholder="Speak your answer...">
+            <button id="submit-btn">SUBMIT</button>
+            <div id="timer">00:10</div>
+        </div>
+
+        <!-- Punishment Screen -->
         <div id="punishment" class="hidden">
-            <img id="screamer" src="" alt="SCREAMER">
+            <img id="screamer" src="" alt="HORROR">
         </div>
 
+        <!-- Reward Screen -->
         <div id="reward" class="hidden">
-            <h2>YOU HAVE UNLOCKED THE TRUTH</h2>
-            <p>But was it worth it?</p>
-            <p id="threat-text"></p>
+            <h1>YOU HAVE REACHED THE CORE</h1>
+            <div class="riddle-text">
+                <p>But no one escapes the Labyrinth.</p>
+                <p>We see you now.</p>
+                <p id="final-message"></p>
+            </div>
         </div>
     </div>
 
-    <audio id="scream-sound" src="https://soundbible.com/mp3/Woman%20Scream-SoundBible.com-1136428198.mp3"></audio>
-    <audio id="whisper-sound" src="https://soundbible.com/mp3/Ghostly%20Whisper-SoundBible.com-68138567.mp3"></audio>
+    <!-- Audio Elements -->
+    <audio id="ambient-sound" loop></audio>
+    <audio id="scream-sound"></audio>
+    <audio id="whisper-sound"></audio>
+    <audio id="heartbeat-sound" loop></audio>
+    <audio id="clock-sound" loop></audio>
 
     <script src="app.js"></script>
 </body>
