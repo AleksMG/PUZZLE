@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE CURSED PUZZLE</title>
+    <style>
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        #riddle-box {
+            border: 2px solid #f00;
+            padding: 20px;
+            max-width: 600px;
+            margin: 100px auto;
+            background: #111;
+            position: relative;
+        }
+        #answer-input {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #f00;
+            padding: 10px;
+            font-size: 16px;
+            width: 80%;
+            margin-top: 20px;
+        }
+        #submit-btn {
+            background: #300;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #submit-btn:hover {
+            background: #f00;
+        }
+        .glitch {
+            animation: glitch-effect 0.3s infinite;
+        }
+        @keyframes glitch-effect {
+            0% { text-shadow: 2px 0 #0f0, -2px 0 #f00; }
+            25% { text-shadow: -2px 0 #0f0, 2px 0 #f00; }
+            50% { text-shadow: 2px 0 #00f, -2px 0 #0f0; }
+            75% { text-shadow: -2px 0 #00f, 2px 0 #f00; }
+            100% { text-shadow: 2px 0 #0f0, -2px 0 #00f; }
+        }
+        .hidden { display: none; }
+        #screamer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div id="riddle-box">
+        <h1 class="glitch">THE CURSED PUZZLE</h1>
+        <p>Answer correctly... or face the horror.</p>
+        
+        <div id="riddle">
+            <p><em>"I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?"</em></p>
+            <input type="text" id="answer-input" placeholder="Your answer...">
+            <button id="submit-btn">SUBMIT</button>
+        </div>
+
+        <div id="punishment" class="hidden">
+            <img id="screamer" src="" alt="SCREAMER">
+        </div>
+
+        <div id="reward" class="hidden">
+            <h2>YOU HAVE UNLOCKED THE TRUTH</h2>
+            <p>But was it worth it?</p>
+            <p id="threat-text"></p>
+        </div>
+    </div>
+
+    <audio id="scream-sound" src="https://soundbible.com/mp3/Woman%20Scream-SoundBible.com-1136428198.mp3"></audio>
+    <audio id="whisper-sound" src="https://soundbible.com/mp3/Ghostly%20Whisper-SoundBible.com-68138567.mp3"></audio>
+
+    <script src="app.js"></script>
+</body>
+</html>
