@@ -1,315 +1,411 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE LABYRINTH AWAITS</title>
+    <title>Base36 Box Cipher</title>
     <style>
-        :root {
-            --blood: #8a0303;
-            --glow: #0f0;
-            --void: #000;
-        }
-        body {
-            background: var(--void);
-            color: var(--glow);
-            font-family: 'Old English Text MT', serif;
-            text-align: center;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            cursor: none;
-            height: 100vh;
-            user-select: none;
         }
-        #custom-cursor {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="%238a0303" d="M16 2C8.3 2 2 8.3 2 16s6.3 14 14 14 14-6.3 14-14S23.7 2 16 2zm0 24c-5.5 0-10-4.5-10-10S10.5 6 16 6s10 4.5 10 10-4.5 10-10 10z"/></svg>') no-repeat;
-            pointer-events: none;
-            z-index: 99999;
-            transform: translate(-50%, -50%);
-            transition: transform 0.05s;
-        }
-        #level-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            position: relative;
-        }
-        .level {
-            display: none;
-            max-width: 800px;
-            padding: 30px;
-            border: 3px solid var(--blood);
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: 0 0 20px var(--blood);
-            position: relative;
-        }
-        .active-level {
-            display: block;
-            animation: fadeIn 2s;
-        }
-        h1 {
-            font-size: 3rem;
-            text-shadow: 0 0 10px var(--glow);
-            margin-bottom: 30px;
-            letter-spacing: 3px;
-        }
-        .riddle-text {
-            font-size: 1.5rem;
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0d1117;
+            color: #c9d1d9;
             line-height: 1.6;
-            margin-bottom: 30px;
-            min-height: 120px;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
         }
-        #answer-input {
-            background: transparent;
-            color: var(--glow);
-            border: 1px solid var(--blood);
-            padding: 15px;
-            font-size: 1.2rem;
-            width: 70%;
-            margin: 20px 0;
-            font-family: inherit;
+        
+        .container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
             text-align: center;
+            color: #58a6ff;
+            margin-bottom: 20px;
+            font-size: 2em;
         }
-        #submit-btn {
-            background: linear-gradient(to bottom, #300, #500);
-            color: white;
-            border: 2px solid var(--blood);
-            padding: 12px 30px;
-            font-size: 1.2rem;
-            cursor: none;
-            transition: all 0.3s;
+        
+        h2 {
+            color: #58a6ff;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #8b949e;
             font-weight: bold;
-            letter-spacing: 1px;
         }
-        #submit-btn:hover {
-            background: linear-gradient(to bottom, #500, #700);
-            box-shadow: 0 0 15px var(--blood);
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            color: #c9d1d9;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
         }
-        .hidden { display: none !important; }
-        #screamer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 99998;
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
         }
-        #eyes {
-            position: fixed;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 99997;
+        
+        .btn {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
-        .eye {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: white;
-            border-radius: 50%;
-            border: 3px solid var(--blood);
+        
+        .btn:hover {
+            background: #2ea043;
         }
-        .pupil {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #000;
-            border-radius: 50%;
-            top: 20px;
-            left: 20px;
+        
+        .btn-secondary {
+            background: #30363d;
         }
-        #corruption-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: transparent;
-            pointer-events: none;
-            z-index: 99996;
+        
+        .btn-secondary:hover {
+            background: #484f58;
         }
-        .blood-drop {
-            position: absolute;
-            width: 5px;
-            height: 10px;
-            background: var(--blood);
-            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-            animation: drip 5s linear forwards;
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        
+        .status {
+            padding: 10px;
+            background: #1c2128;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 14px;
         }
-        @keyframes drip {
-            0% { transform: translateY(-100px); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(100vh); opacity: 0; }
+        
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 2px;
+            margin: 10px 0;
+            max-width: 300px;
         }
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-5px, 5px); }
-            40% { transform: translate(-5px, -5px); }
-            60% { transform: translate(5px, 5px); }
-            80% { transform: translate(5px, -5px); }
-            100% { transform: translate(0); }
+        
+        .matrix-cell {
+            padding: 5px;
+            background: #1c2128;
+            border: 1px solid #30363d;
+            text-align: center;
+            font-size: 12px;
         }
-        .glitch-effect {
-            animation: glitch 0.5s infinite;
-        }
-        #timer {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 1.5rem;
-            color: var(--blood);
-        }
-        #hint-btn {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: transparent;
-            color: var(--glow);
-            border: 1px solid var(--glow);
-            padding: 5px 10px;
-            cursor: none;
+        
+        .debug {
+            font-size: 12px;
+            color: #8b949e;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
-    <div id="custom-cursor"></div>
-    <div id="eyes"></div>
-    <div id="corruption-overlay"></div>
-
-    <div id="level-container">
-        <!-- Level 0 - Warning -->
-        <div class="level" id="level-0">
-            <h1>DO NOT PROCEED</h1>
-            <div class="riddle-text">
-                <p>This is your final warning. Turn back now.</p>
-                <p>The Labyrinth consumes all who enter.</p>
-                <p>No soul has ever escaped.</p>
-            </div>
-            <button id="enter-btn">ENTER IF YOU DARE</button>
+    <h1>Base36 Box Cipher</h1>
+    
+    <div class="container">
+        <div class="input-group">
+            <label for="key">Ключ:</label>
+            <input type="text" id="key" placeholder="Введите ключ (любые символы)" value="secretkey">
         </div>
-
-        <!-- Level 1 - First Riddle -->
-        <div class="level" id="level-1">
-            <h1>LEVEL 1: THE GATE</h1>
-            <div class="riddle-text">
-                <p>"I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?"</p>
-                <p class="cipher">Clue: Rot13 - "Rpub"</p>
-            </div>
-            <input type="text" id="answer-input" placeholder="Speak your answer...">
-            <button id="submit-btn">SUBMIT</button>
-            <div id="timer">01:00</div>
-            <button id="hint-btn">HINT (Cost: 15s)</button>
+        
+        <div class="input-group">
+            <label for="inputText">Исходный текст:</label>
+            <textarea id="inputText" placeholder="Введите текст для шифрования (только 0-9a-z)">hello123</textarea>
         </div>
-
-        <!-- Level 2 - Second Riddle -->
-        <div class="level" id="level-2">
-            <h1>LEVEL 2: THE ABYSS</h1>
-            <div class="riddle-text">
-                <p>"The more you take, the more you leave behind. What am I?"</p>
-                <p class="cipher">Clue: Caesar Shift +3 - "Wkh vwhsv"</p>
-            </div>
-            <input type="text" id="answer-input" placeholder="Speak your answer...">
-            <button id="submit-btn">SUBMIT</button>
-            <div id="timer">00:45</div>
-            <button id="hint-btn">HINT (Cost: 10s)</button>
+        
+        <div class="controls">
+            <button class="btn" onclick="encrypt()">Зашифровать</button>
+            <button class="btn" onclick="decrypt()">Расшифровать</button>
+            <button class="btn btn-secondary" onclick="clearAll()">Очистить</button>
         </div>
-
-        <!-- Level 3 - Third Riddle -->
-        <div class="level" id="level-3">
-            <h1>LEVEL 3: THE VOID</h1>
-            <div class="riddle-text">
-                <p>"I'm light as a feather, yet the strongest man can't hold me for more than a minute. What am I?"</p>
-                <p class="cipher">Clue: Atbash - "Zmbv"</p>
-            </div>
-            <input type="text" id="answer-input" placeholder="Speak your answer...">
-            <button id="submit-btn">SUBMIT</button>
-            <div id="timer">00:30</div>
-            <button id="hint-btn">HINT (Cost: 5s)</button>
+        
+        <div class="input-group">
+            <label for="outputText">Результат:</label>
+            <textarea id="outputText" readonly placeholder="Результат появится здесь..."></textarea>
         </div>
-
-        <!-- Level 4 - Fourth Riddle -->
-        <div class="level" id="level-4">
-            <h1>LEVEL 4: THE DESCENT</h1>
-            <div class="riddle-text">
-                <p>"I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?"</p>
-                <p class="cipher">Clue: Vigenère (key: DARK) - "Fpzq"</p>
-            </div>
-            <input type="text" id="answer-input" placeholder="Speak your answer...">
-            <button id="submit-btn">SUBMIT</button>
-            <div id="timer">00:25</div>
-        </div>
-
-        <!-- Level 5 - Fifth Riddle -->
-        <div class="level" id="level-5">
-            <h1>LEVEL 5: THE NIGHTMARE</h1>
-            <div class="riddle-text">
-                <p>"What can run but never walks, has a mouth but never talks, has a head but never weeps, has a bed but never sleeps?"</p>
-                <p class="cipher">Clue: Binary - 01010010 01101001 01110110 01100101 01110010</p>
-            </div>
-            <input type="text" id="answer-input" placeholder="Speak your answer...">
-            <button id="submit-btn">SUBMIT</button>
-            <div id="timer">00:20</div>
-        </div>
-
-        <!-- Level 6 - Sixth Riddle -->
-        <div class="level" id="level-6">
-            <h1>LEVEL 6: THE MAW</h1>
-            <div class="riddle-text">
-                <p>"I'm alive without breath, and cold as death. I'm never thirsty, but always drinking. What am I?"</p>
-                <p class="cipher">Clue: Hex - 46 69 73 68</p>
-            </div>
-            <input type="text" id="answer-input" placeholder="Speak your answer...">
-            <button id="submit-btn">SUBMIT</button>
-            <div id="timer">00:15</div>
-        </div>
-
-        <!-- Level 7 - Final Challenge -->
-        <div class="level" id="level-7">
-            <h1>FINAL LEVEL: THE HEART</h1>
-            <div class="riddle-text">
-                <p>"What can you hold in your right hand, but never in your left hand?"</p>
-                <p class="cipher">Clue: Base64 - "WW91ciBsZWZ0IGVsYm93"</p>
-            </div>
-            <input type="text" id="answer-input" placeholder="Speak your answer...">
-            <button id="submit-btn">SUBMIT</button>
-            <div id="timer">00:10</div>
-        </div>
-
-        <!-- Punishment Screen -->
-        <div id="punishment" class="hidden">
-            <img id="screamer" src="" alt="HORROR">
-        </div>
-
-        <!-- Reward Screen -->
-        <div id="reward" class="hidden">
-            <h1>YOU HAVE REACHED THE CORE</h1>
-            <div class="riddle-text">
-                <p>But no one escapes the Labyrinth.</p>
-                <p>We see you now.</p>
-                <p id="final-message"></p>
-            </div>
-        </div>
+        
+        <div class="status" id="status">Готов к работе</div>
     </div>
 
-    <!-- Audio Elements -->
-    <audio id="ambient-sound" loop></audio>
-    <audio id="scream-sound"></audio>
-    <audio id="whisper-sound"></audio>
-    <audio id="heartbeat-sound" loop></audio>
-    <audio id="clock-sound" loop></audio>
+    <script>
+        // ==================== GF(2⁶) АРИФМЕТИКА ====================
+        class GF64 {
+            static add(a, b) {
+                return a ^ b;
+            }
+            
+            static mul(a, b) {
+                let p = 0;
+                for (let i = 0; i < 6; i++) {
+                    if (b & 1) p ^= a;
+                    b >>= 1;
+                    const carry = a & 0x20;
+                    a = (a << 1) & 0x3F;
+                    if (carry) a ^= 0x2D;
+                }
+                return p;
+            }
+        }
 
-    <script src="app.js"></script>
+        // ==================== MDS МАТРИЦЫ ====================
+        const MDS_MATRIX = [
+            [0x01, 0x02, 0x04, 0x08, 0x10, 0x20],
+            [0x20, 0x01, 0x02, 0x04, 0x08, 0x10],
+            [0x10, 0x20, 0x01, 0x02, 0x04, 0x08],
+            [0x08, 0x10, 0x20, 0x01, 0x02, 0x04],
+            [0x04, 0x08, 0x10, 0x20, 0x01, 0x02],
+            [0x02, 0x04, 0x08, 0x10, 0x20, 0x01]
+        ];
+
+        // ==================== BASE36 КОНСТАНТЫ ====================
+        const BASE36_CHARS = '0123456789abcdefghijklmnopqrstuvwxyz';
+
+        // ==================== S-BOX ГЕНЕРАЦИЯ ====================
+        function generateSBox(key) {
+            let s = Array.from({length: 64}, (_, i) => i);
+            let j = 0;
+            
+            const keyBytes = Array.from(key).map(c => c.charCodeAt(0) & 0x3F);
+            if (keyBytes.length === 0) keyBytes.push(0);
+            
+            for (let i = 0; i < 64; i++) {
+                j = (j + s[i] + keyBytes[i % keyBytes.length]) % 64;
+                [s[i], s[j]] = [s[j], s[i]];
+            }
+            
+            return s.slice(0, 36);
+        }
+
+        // ==================== ОСНОВНЫЕ ОПЕРАЦИИ ====================
+        function subBytes(state, sbox) {
+            const newState = JSON.parse(JSON.stringify(state));
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    newState[i][j] = sbox[newState[i][j]];
+                }
+            }
+            return newState;
+        }
+
+        function shiftRows(state) {
+            const newState = JSON.parse(JSON.stringify(state));
+            for (let i = 0; i < 6; i++) {
+                newState[i] = [...newState[i].slice(i), ...newState[i].slice(0, i)];
+            }
+            return newState;
+        }
+
+        function invShiftRows(state) {
+            const newState = JSON.parse(JSON.stringify(state));
+            for (let i = 0; i < 6; i++) {
+                newState[i] = [...newState[i].slice(6-i), ...newState[i].slice(0, 6-i)];
+            }
+            return newState;
+        }
+
+        function mixColumns(state) {
+            const newState = Array(6).fill().map(() => Array(6).fill(0));
+            
+            for (let col = 0; col < 6; col++) {
+                for (let i = 0; i < 6; i++) {
+                    for (let j = 0; j < 6; j++) {
+                        newState[i][col] = GF64.add(
+                            newState[i][col],
+                            GF64.mul(MDS_MATRIX[i][j], state[j][col])
+                        );
+                    }
+                }
+            }
+            
+            return newState;
+        }
+
+        // ==================== ПРЕОБРАЗОВАНИЯ БЛОКОВ ====================
+        function textToBlock(text) {
+            const paddedText = text.padEnd(36, '0');
+            const nums = Array.from(paddedText)
+                .map(c => {
+                    const index = BASE36_CHARS.indexOf(c);
+                    return index === -1 ? 0 : index;
+                });
+            
+            const block = [];
+            for (let i = 0; i < 6; i++) {
+                block.push(nums.slice(i * 6, i * 6 + 6));
+            }
+            return block;
+        }
+
+        function blockToText(block) {
+            return block.flat()
+                .map(n => BASE36_CHARS[n % 36])
+                .join('');
+        }
+
+        // ==================== ШИФРОВАНИЕ/ДЕШИФРОВАНИЕ ====================
+        function encryptBlock(block, sbox, rounds = 4) {
+            let state = JSON.parse(JSON.stringify(block));
+            
+            for (let round = 0; round < rounds; round++) {
+                state = subBytes(state, sbox);
+                state = shiftRows(state);
+                state = mixColumns(state);
+            }
+            
+            return state;
+        }
+
+        function decryptBlock(block, sbox, rounds = 4) {
+            let state = JSON.parse(JSON.stringify(block));
+            const inverseSbox = generateInverseSbox(sbox);
+            
+            for (let round = 0; round < rounds; round++) {
+                state = mixColumns(state);
+                state = invShiftRows(state);
+                state = subBytes(state, inverseSbox);
+            }
+            
+            return state;
+        }
+
+        function generateInverseSbox(sbox) {
+            const inverse = new Array(36);
+            for (let i = 0; i < 36; i++) {
+                inverse[sbox[i]] = i;
+            }
+            return inverse;
+        }
+
+        // ==================== ОБРАБОТКА ТЕКСТА ====================
+        function processText(text, key, encrypt = true) {
+            const sbox = generateSBox(key);
+            const chunks = [];
+            
+            for (let i = 0; i < text.length; i += 36) {
+                chunks.push(text.substr(i, 36));
+            }
+            
+            const resultChunks = [];
+            
+            for (const chunk of chunks) {
+                const block = textToBlock(chunk);
+                const processedBlock = encrypt ? 
+                    encryptBlock(block, sbox) : 
+                    decryptBlock(block, sbox);
+                resultChunks.push(blockToText(processedBlock));
+            }
+            
+            return resultChunks.join('');
+        }
+
+        // ==================== ИНТЕРФЕЙС ====================
+        function encrypt() {
+            const key = document.getElementById('key').value;
+            const inputText = document.getElementById('inputText').value.toLowerCase().replace(/[^0-9a-z]/g, '');
+            
+            if (!key) {
+                showStatus('Ошибка: Введите ключ', 'error');
+                return;
+            }
+            
+            if (!inputText) {
+                showStatus('Ошибка: Введите текст для шифрования', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Шифрование...', 'working');
+                const result = processText(inputText, key, true);
+                document.getElementById('outputText').value = result;
+                showStatus('Текст зашифрован успешно', 'success');
+            } catch (error) {
+                showStatus('Ошибка при шифровании: ' + error.message, 'error');
+            }
+        }
+
+        function decrypt() {
+            const key = document.getElementById('key').value;
+            const inputText = document.getElementById('inputText').value.toLowerCase().replace(/[^0-9a-z]/g, '');
+            
+            if (!key) {
+                showStatus('Ошибка: Введите ключ', 'error');
+                return;
+            }
+            
+            if (!inputText) {
+                showStatus('Ошибка: Введите текст для дешифрования', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Дешифрование...', 'working');
+                const result = processText(inputText, key, false);
+                document.getElementById('outputText').value = result;
+                showStatus('Текст расшифрован успешно', 'success');
+            } catch (error) {
+                showStatus('Ошибка при дешифровании: ' + error.message, 'error');
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('outputText').value = '';
+            document.getElementById('status').textContent = 'Готов к работе';
+            document.getElementById('status').style.color = '#c9d1d9';
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            
+            switch (type) {
+                case 'error':
+                    status.style.color = '#f85149';
+                    break;
+                case 'success':
+                    status.style.color = '#3fb950';
+                    break;
+                case 'working':
+                    status.style.color = '#d29922';
+                    break;
+                default:
+                    status.style.color = '#c9d1d9';
+            }
+        }
+    </script>
 </body>
 </html>
