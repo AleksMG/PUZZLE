@@ -1,234 +1,167 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Base36 AES Cipher</title>
-    <meta charset="UTF-8">
+    <title>Digital AES-like Cipher</title>
     <style>
         body { font-family: monospace; margin: 20px; }
-        textarea, input { width: 300px; margin: 5px 0; }
-        button { padding: 10px; margin: 5px; }
+        textarea, input { width: 300px; }
+        button { padding: 10px; }
     </style>
 </head>
 <body>
-    <h1>Base36 AES Cipher</h1>
-    
+    <h2>Digital AES-like Cipher (Text)</h2>
+
     <label>Текст:</label><br>
-    <textarea id="input" rows="4">test123</textarea><br>
-    
+    <textarea id="input" rows="4">test</textarea><br>
+
+    <label>Ключ:</label><br>
+    <input type="text" id="key" value="secret"><br><br>
+
     <button onclick="encrypt()">Зашифровать</button>
     <button onclick="decrypt()">Расшифровать</button><br>
-    
+
     <label>Результат:</label><br>
     <textarea id="output" rows="4" readonly></textarea>
 
     <script>
-        // ==================== МАППИНГ БУКВА -> ЦИФРА ====================
-        const CHAR_TO_NUM = {
-            '0':0, '1':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9,
-            'a':10, 'b':11, 'c':12, 'd':13, 'e':14, 'f':15, 'g':16, 'h':17, 'i':18, 'j':19,
-            'k':20, 'l':21, 'm':22, 'n':23, 'o':24, 'p':25, 'q':26, 'r':27, 's':28, 't':29,
-            'u':30, 'v':31, 'w':32, 'x':33, 'y':34, 'z':35
-        };
+        // ==================== ЦИФРОВОЙ АЛФАВИТ ====================
+        const CHAR_TO_NUM = {};
+        const NUM_TO_CHAR = {};
+        const alphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
+        for (let i = 0; i < alphabet.length; i++) {
+            CHAR_TO_NUM[alphabet[i]] = i;
+            NUM_TO_CHAR[i] = alphabet[i];
+        }
+        const MOD = 36;
 
-        // ==================== МАППИНГ ЦИФРА -> БУКВА ====================
-        const NUM_TO_CHAR = {
-            0:'0', 1:'1', 2:'2', 3:'3', 4:'4', 5:'5', 6:'6', 7:'7', 8:'8', 9:'9',
-            10:'a', 11:'b', 12:'c', 13:'d', 14:'e', 15:'f', 16:'g', 17:'h', 18:'i', 19:'j',
-            20:'k', 21:'l', 22:'m', 23:'n', 24:'o', 25:'p', 26:'q', 27:'r', 28:'s', 29:'t',
-            30:'u', 31:'v', 32:'w', 33:'x', 34:'y', 35:'z'
-        };
-
-        // ==================== S-BOX (ЦИФРА -> ЦИФРА) ====================
+        // ==================== S-BOX (36 элементов) ====================
         const S_BOX = [
-            16, 3, 22, 27, 2, 29, 14, 31, 8, 35, 
-            11, 26, 19, 33, 6, 25, 20, 9, 32, 15, 
-            24, 3, 30, 17, 10, 34, 13, 28, 7, 21, 
+            16, 3, 22, 27, 2, 29, 14, 31, 8, 35,
+            11, 26, 19, 33, 6, 25, 20, 9, 32, 15,
+            24, 3, 30, 17, 10, 34, 13, 28, 7, 21,
             1, 18, 23, 4, 12, 0
         ];
 
-        // ==================== ОБРАТНЫЙ S-BOX ====================
         const INV_S_BOX = new Array(36);
-        for (let i = 0; i < 36; i++) {
-            INV_S_BOX[S_BOX[i]] = i;
-        }
+        for (let i = 0; i < 36; i++) INV_S_BOX[S_BOX[i]] = i;
 
-        // ==================== GALOIS FIELD OPERATIONS ====================
-        const IRREDUCIBLE_POLY = 0x2D; // x^6 + x^4 + x^3 + x + 1
-
-        function gf_add(a, b) {
-            return a ^ b;
-        }
-
-        function gf_mul(a, b) {
-            let p = 0;
-            for (let i = 0; i < 6; i++) {
-                if (b & 1) p ^= a;
-                b >>= 1;
-                const carry = a & 0x20;
-                a = (a << 1) & 0x3F;
-                if (carry) a ^= IRREDUCIBLE_POLY;
-            }
-            return p;
-        }
-
-        // ==================== MIXCOLUMNS MATRIX ====================
-        const MIX_MATRIX = [
-            [0x01, 0x02, 0x04, 0x08, 0x10, 0x20],
-            [0x20, 0x01, 0x02, 0x04, 0x08, 0x10],
-            [0x10, 0x20, 0x01, 0x02, 0x04, 0x08],
-            [0x08, 0x10, 0x20, 0x01, 0x02, 0x04],
-            [0x04, 0x08, 0x10, 0x20, 0x01, 0x02],
-            [0x02, 0x04, 0x08, 0x10, 0x20, 0x01]
-        ];
-
-        // ==================== ОБРАТНАЯ MATRIX ====================
-        const INV_MIX_MATRIX = [
-            [0x20, 0x10, 0x08, 0x04, 0x02, 0x01],
-            [0x01, 0x20, 0x10, 0x08, 0x04, 0x02],
-            [0x02, 0x01, 0x20, 0x10, 0x08, 0x04],
-            [0x04, 0x02, 0x01, 0x20, 0x10, 0x08],
-            [0x08, 0x04, 0x02, 0x01, 0x20, 0x10],
-            [0x10, 0x08, 0x04, 0x02, 0x01, 0x20]
-        ];
-
-        // ==================== ОСНОВНЫЕ ОПЕРАЦИИ ====================
-        function textToNumbers(text) {
-            const numbers = [];
-            for (let char of text.toLowerCase()) {
+        // ==================== КЛЮЧЕВАЯ ГЕНЕРАЦИЯ ====================
+        function generateKeyMatrix(key) {
+            let keyNums = [];
+            for (let char of key) {
                 if (CHAR_TO_NUM[char] !== undefined) {
-                    numbers.push(CHAR_TO_NUM[char]);
+                    keyNums.push(CHAR_TO_NUM[char]);
                 }
             }
-            return numbers;
+            // Дополняем ключ до 36 элементов
+            while (keyNums.length < 36) {
+                keyNums.push(...keyNums);
+                if (keyNums.length > 36) keyNums = keyNums.slice(0, 36);
+            }
+            // Преобразуем в матрицу 6x6
+            let matrix = [];
+            for (let i = 0; i < 6; i++) {
+                matrix.push(keyNums.slice(i*6, i*6+6));
+            }
+            return matrix;
         }
 
-        function numbersToText(numbers) {
+        // ==================== ОСНОВНЫЕ ОПЕРАЦИИ ====================
+        function subBytes(state, inverse = false) {
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    state[i][j] = inverse ? INV_S_BOX[state[i][j]] : S_BOX[state[i][j]];
+                }
+            }
+        }
+
+        function shiftRows(state, inverse = false) {
+            for (let i = 0; i < 6; i++) {
+                let shift = inverse ? (6 - i) % 6 : i;
+                state[i] = [...state[i].slice(shift), ...state[i].slice(0, shift)];
+            }
+        }
+
+        function addRoundKey(state, roundKey) {
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    state[i][j] = (state[i][j] + roundKey[i][j]) % MOD;
+                }
+            }
+        }
+
+        function invAddRoundKey(state, roundKey) {
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    state[i][j] = (state[i][j] - roundKey[i][j] + MOD) % MOD;
+                }
+            }
+        }
+
+        // ==================== ОБРАБОТКА ТЕКСТА ====================
+        function textToBlock(text) {
+            let nums = [];
+            for (let char of text.toLowerCase()) {
+                if (CHAR_TO_NUM[char] !== undefined) {
+                    nums.push(CHAR_TO_NUM[char]);
+                }
+            }
+            // Дополняем до 36 символов
+            while (nums.length < 36) nums.push(0);
+            
+            let block = [];
+            for (let i = 0; i < 6; i++) {
+                block.push(nums.slice(i*6, i*6+6));
+            }
+            return block;
+        }
+
+        function blockToText(block) {
             let text = '';
-            for (let num of numbers) {
-                text += NUM_TO_CHAR[num];
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    text += NUM_TO_CHAR[block[i][j]];
+                }
             }
             return text;
         }
 
-        function subBytes(state) {
-            for (let i = 0; i < 6; i++) {
-                for (let j = 0; j < 6; j++) {
-                    state[i][j] = S_BOX[state[i][j]];
-                }
-            }
-        }
-
-        function invSubBytes(state) {
-            for (let i = 0; i < 6; i++) {
-                for (let j = 0; j < 6; j++) {
-                    state[i][j] = INV_S_BOX[state[i][j]];
-                }
-            }
-        }
-
-        function shiftRows(state) {
-            for (let i = 0; i < 6; i++) {
-                state[i] = [...state[i].slice(i), ...state[i].slice(0, i)];
-            }
-        }
-
-        function invShiftRows(state) {
-            for (let i = 0; i < 6; i++) {
-                state[i] = [...state[i].slice(6-i), ...state[i].slice(0, 6-i)];
-            }
-        }
-
-        function mixColumns(state) {
-            const newState = Array(6).fill().map(() => Array(6).fill(0));
+        // ==================== ШИФРОВАНИЕ/ДЕШИФРОВАНИЕ ====================
+        function processText(text, key, encrypt = true) {
+            const keyMatrix = generateKeyMatrix(key.toLowerCase());
+            const state = textToBlock(text.toLowerCase());
             
-            for (let col = 0; col < 6; col++) {
-                for (let i = 0; i < 6; i++) {
-                    for (let j = 0; j < 6; j++) {
-                        newState[i][col] = gf_add(
-                            newState[i][col],
-                            gf_mul(MIX_MATRIX[i][j], state[j][col])
-                        );
-                    }
+            if (encrypt) {
+                addRoundKey(state, keyMatrix);
+                for (let round = 0; round < 4; round++) {
+                    subBytes(state);
+                    shiftRows(state);
+                    addRoundKey(state, keyMatrix);
                 }
+            } else {
+                for (let round = 0; round < 4; round++) {
+                    invAddRoundKey(state, keyMatrix);
+                    shiftRows(state, true);
+                    subBytes(state, true);
+                }
+                invAddRoundKey(state, keyMatrix);
             }
             
-            return newState;
+            return blockToText(state);
         }
 
-        function invMixColumns(state) {
-            const newState = Array(6).fill().map(() => Array(6).fill(0));
-            
-            for (let col = 0; col < 6; col++) {
-                for (let i = 0; i < 6; i++) {
-                    for (let j = 0; j < 6; j++) {
-                        newState[i][col] = gf_add(
-                            newState[i][col],
-                            gf_mul(INV_MIX_MATRIX[i][j], state[j][col])
-                        );
-                    }
-                }
-            }
-            
-            return newState;
-        }
-
-        // ==================== ШИФРОВАНИЕ ====================
         function encrypt() {
-            const inputText = document.getElementById('input').value;
-            let numbers = textToNumbers(inputText);
-            
-            // Дополняем до 36 символов и создаем блок 6x6
-            while (numbers.length < 36) numbers.push(0);
-            const block = [];
-            for (let i = 0; i < 6; i++) {
-                block.push(numbers.slice(i * 6, i * 6 + 6));
-            }
-            
-            // 4 раунда AES
-            for (let round = 0; round < 4; round++) {
-                subBytes(block);
-                shiftRows(block);
-                const mixed = mixColumns(block);
-                // Копируем результат обратно в block
-                for (let i = 0; i < 6; i++) {
-                    for (let j = 0; j < 6; j++) {
-                        block[i][j] = mixed[i][j];
-                    }
-                }
-            }
-            
-            // Преобразуем цифры обратно в текст
-            const resultNumbers = block.flat();
-            const resultText = numbersToText(resultNumbers);
-            document.getElementById('output').value = resultText;
+            const text = document.getElementById('input').value;
+            const key = document.getElementById('key').value;
+            if (!key) return alert('Need key!');
+            document.getElementById('output').value = processText(text, key, true);
         }
 
-        // ==================== ДЕШИФРОВАНИЕ ====================
         function decrypt() {
-            const inputText = document.getElementById('input').value;
-            let numbers = textToNumbers(inputText);
-            
-            // Создаем блок 6x6
-            const block = [];
-            for (let i = 0; i < 6; i++) {
-                block.push(numbers.slice(i * 6, i * 6 + 6));
-            }
-            
-            // 4 раунда дешифрования (обратный порядок)
-            for (let round = 0; round < 4; round++) {
-                const mixed = invMixColumns(block);
-                for (let i = 0; i < 6; i++) {
-                    for (let j = 0; j < 6; j++) {
-                        block[i][j] = mixed[i][j];
-                    }
-                }
-                invShiftRows(block);
-                invSubBytes(block);
-            }
-            
-            const resultNumbers = block.flat();
-            const resultText = numbersToText(resultNumbers);
-            document.getElementById('output').value = resultText;
+            const text = document.getElementById('input').value;
+            const key = document.getElementById('key').value;
+            if (!key) return alert('Need key!');
+            document.getElementById('output').value = processText(text, key, false);
         }
     </script>
 </body>
