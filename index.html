@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Digital AES-like Cipher</title>
+    <title>AES-like Text Cipher with Coordinates</title>
     <style>
         body { font-family: monospace; margin: 20px; }
         textarea, input { width: 300px; }
@@ -9,10 +9,10 @@
     </style>
 </head>
 <body>
-    <h2>Digital AES-like Cipher (Text)</h2>
+    <h2>AES-like Text Cipher (Coordinate-based)</h2>
 
     <label>Текст:</label><br>
-    <textarea id="input" rows="4">test</textarea><br>
+    <textarea id="input" rows="4">test123</textarea><br>
 
     <label>Ключ:</label><br>
     <input type="text" id="key" value="secret"><br><br>
@@ -24,143 +24,148 @@
     <textarea id="output" rows="4" readonly></textarea>
 
     <script>
-        // ==================== ЦИФРОВОЙ АЛФАВИТ ====================
-        const CHAR_TO_NUM = {};
-        const NUM_TO_CHAR = {};
+        // ==================== КООРДИНАТНАЯ СИСТЕМА ====================
         const alphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
-        for (let i = 0; i < alphabet.length; i++) {
-            CHAR_TO_NUM[alphabet[i]] = i;
-            NUM_TO_CHAR[i] = alphabet[i];
+        
+        // Преобразование символа в координаты (row, col)
+        function charToCoords(char) {
+            const index = alphabet.indexOf(char.toLowerCase());
+            if (index === -1) return null;
+            return {
+                row: Math.floor(index / 6),
+                col: index % 6
+            };
         }
-        const MOD = 36;
 
-        // ==================== S-BOX (36 элементов) ====================
+        // Преобразование координат в символ
+        function coordsToChar(coords) {
+            const index = coords.row * 6 + coords.col;
+            return alphabet[index];
+        }
+
+        // ==================== S-BOX ДЛЯ КООРДИНАТ ====================
+        // S-BOX: (row, col) -> (new_row, new_col)
         const S_BOX = [
-            16, 3, 22, 27, 2, 29, 14, 31, 8, 35,
-            11, 26, 19, 33, 6, 25, 20, 9, 32, 15,
-            24, 3, 30, 17, 10, 34, 13, 28, 7, 21,
-            1, 18, 23, 4, 12, 0
+            /* row 0 */ [{row:1, col:1}, {row:0, col:3}, {row:2, col:2}, {row:3, col:3}, {row:0, col:2}, {row:3, col:5}],
+            /* row 1 */ [{row:1, col:4}, {row:2, col:1}, {row:0, col:1}, {row:3, col:2}, {row:1, col:0}, {row:4, col:5}],
+            /* row 2 */ [{row:5, col:0}, {row:4, col:3}, {row:3, col:1}, {row:2, col:5}, {row:1, col:3}, {row:5, col:4}],
+            /* row 3 */ [{row:2, col:0}, {row:5, col:2}, {row:4, col:1}, {row:0, col:5}, {row:3, col:4}, {row:1, col:5}],
+            /* row 4 */ [{row:0, col:4}, {row:3, col:0}, {row:5, col:1}, {row:4, col:4}, {row:2, col:4}, {row:4, col:2}],
+            /* row 5 */ [{row:4, col:0}, {row:1, col:2}, {row:5, col:3}, {row:2, col:3}, {row:5, col:5}, {row:0, col:0}]
         ];
 
-        const INV_S_BOX = new Array(36);
-        for (let i = 0; i < 36; i++) INV_S_BOX[S_BOX[i]] = i;
+        // Обратный S-BOX
+        const INV_S_BOX = [];
+        for (let row = 0; row < 6; row++) {
+            INV_S_BOX[row] = [];
+            for (let col = 0; col < 6; col++) {
+                const transformed = S_BOX[row][col];
+                INV_S_BOX[transformed.row][transformed.col] = {row, col};
+            }
+        }
 
         // ==================== КЛЮЧЕВАЯ ГЕНЕРАЦИЯ ====================
-        function generateKeyMatrix(key) {
-            let keyNums = [];
-            for (let char of key) {
-                if (CHAR_TO_NUM[char] !== undefined) {
-                    keyNums.push(CHAR_TO_NUM[char]);
-                }
+        function generateKeyCoords(key) {
+            const keyCoords = [];
+            for (let char of key.toLowerCase()) {
+                const coords = charToCoords(char);
+                if (coords) keyCoords.push(coords);
             }
-            // Дополняем ключ до 36 элементов
-            while (keyNums.length < 36) {
-                keyNums.push(...keyNums);
-                if (keyNums.length > 36) keyNums = keyNums.slice(0, 36);
-            }
-            // Преобразуем в матрицу 6x6
-            let matrix = [];
-            for (let i = 0; i < 6; i++) {
-                matrix.push(keyNums.slice(i*6, i*6+6));
-            }
-            return matrix;
+            return keyCoords;
         }
 
         // ==================== ОСНОВНЫЕ ОПЕРАЦИИ ====================
-        function subBytes(state, inverse = false) {
-            for (let i = 0; i < 6; i++) {
-                for (let j = 0; j < 6; j++) {
-                    state[i][j] = inverse ? INV_S_BOX[state[i][j]] : S_BOX[state[i][j]];
-                }
-            }
+        function subBytes(coords, inverse = false) {
+            const box = inverse ? INV_S_BOX : S_BOX;
+            return box[coords.row][coords.col];
         }
 
-        function shiftRows(state, inverse = false) {
-            for (let i = 0; i < 6; i++) {
-                let shift = inverse ? (6 - i) % 6 : i;
-                state[i] = [...state[i].slice(shift), ...state[i].slice(0, shift)];
-            }
+        function shiftRows(coords, inverse = false) {
+            const shift = inverse ? (6 - coords.row) % 6 : coords.row;
+            return {
+                row: coords.row,
+                col: (coords.col + shift) % 6
+            };
         }
 
-        function addRoundKey(state, roundKey) {
-            for (let i = 0; i < 6; i++) {
-                for (let j = 0; j < 6; j++) {
-                    state[i][j] = (state[i][j] + roundKey[i][j]) % MOD;
-                }
+        function mixColumns(coords, inverse = false) {
+            // Простое перемешивание: (row + col * 2) mod 6 для row, (col + row) mod 6 для col
+            if (inverse) {
+                return {
+                    row: (coords.row - coords.col * 2 + 12) % 6,
+                    col: (coords.col - coords.row + 6) % 6
+                };
             }
+            return {
+                row: (coords.row + coords.col * 2) % 6,
+                col: (coords.col + coords.row) % 6
+            };
         }
 
-        function invAddRoundKey(state, roundKey) {
-            for (let i = 0; i < 6; i++) {
-                for (let j = 0; j < 6; j++) {
-                    state[i][j] = (state[i][j] - roundKey[i][j] + MOD) % MOD;
-                }
-            }
+        function addRoundKey(coords, keyCoords, keyIndex) {
+            const key = keyCoords[keyIndex % keyCoords.length];
+            return {
+                row: (coords.row + key.row) % 6,
+                col: (coords.col + key.col) % 6
+            };
+        }
+
+        function invAddRoundKey(coords, keyCoords, keyIndex) {
+            const key = keyCoords[keyIndex % keyCoords.length];
+            return {
+                row: (coords.row - key.row + 6) % 6,
+                col: (coords.col - key.col + 6) % 6
+            };
         }
 
         // ==================== ОБРАБОТКА ТЕКСТА ====================
-        function textToBlock(text) {
-            let nums = [];
-            for (let char of text.toLowerCase()) {
-                if (CHAR_TO_NUM[char] !== undefined) {
-                    nums.push(CHAR_TO_NUM[char]);
-                }
-            }
-            // Дополняем до 36 символов
-            while (nums.length < 36) nums.push(0);
-            
-            let block = [];
-            for (let i = 0; i < 6; i++) {
-                block.push(nums.slice(i*6, i*6+6));
-            }
-            return block;
-        }
-
-        function blockToText(block) {
-            let text = '';
-            for (let i = 0; i < 6; i++) {
-                for (let j = 0; j < 6; j++) {
-                    text += NUM_TO_CHAR[block[i][j]];
-                }
-            }
-            return text;
-        }
-
-        // ==================== ШИФРОВАНИЕ/ДЕШИФРОВАНИЕ ====================
         function processText(text, key, encrypt = true) {
-            const keyMatrix = generateKeyMatrix(key.toLowerCase());
-            const state = textToBlock(text.toLowerCase());
-            
-            if (encrypt) {
-                addRoundKey(state, keyMatrix);
-                for (let round = 0; round < 4; round++) {
-                    subBytes(state);
-                    shiftRows(state);
-                    addRoundKey(state, keyMatrix);
+            const keyCoords = generateKeyCoords(key);
+            if (keyCoords.length === 0) return '';
+
+            let result = '';
+            let keyIndex = 0;
+
+            for (let char of text) {
+                let coords = charToCoords(char);
+                if (!coords) {
+                    result += char;
+                    continue;
                 }
-            } else {
-                for (let round = 0; round < 4; round++) {
-                    invAddRoundKey(state, keyMatrix);
-                    shiftRows(state, true);
-                    subBytes(state, true);
+
+                if (encrypt) {
+                    // ШИФРОВАНИЕ: 4 раунда
+                    for (let round = 0; round < 4; round++) {
+                        coords = subBytes(coords);
+                        coords = shiftRows(coords);
+                        coords = mixColumns(coords);
+                        coords = addRoundKey(coords, keyCoords, keyIndex++);
+                    }
+                } else {
+                    // ДЕШИФРОВКА: обратные раунды
+                    for (let round = 0; round < 4; round++) {
+                        coords = invAddRoundKey(coords, keyCoords, --keyIndex);
+                        coords = mixColumns(coords, true);
+                        coords = shiftRows(coords, true);
+                        coords = subBytes(coords, true);
+                    }
                 }
-                invAddRoundKey(state, keyMatrix);
+
+                result += coordsToChar(coords);
             }
-            
-            return blockToText(state);
+
+            return result;
         }
 
         function encrypt() {
             const text = document.getElementById('input').value;
             const key = document.getElementById('key').value;
-            if (!key) return alert('Need key!');
             document.getElementById('output').value = processText(text, key, true);
         }
 
         function decrypt() {
             const text = document.getElementById('input').value;
             const key = document.getElementById('key').value;
-            if (!key) return alert('Need key!');
             document.getElementById('output').value = processText(text, key, false);
         }
     </script>
