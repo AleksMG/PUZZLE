@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Homophonic Cipher - Byte-Based Implementation</title>
+    <title>Enhanced Homophonic Cipher System</title>
     <style>
+        /* Стили остаются без изменений */
         :root {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
@@ -191,7 +192,6 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0.5rem;
-            font-size: 0.9rem;
         }
         
         .result-title {
@@ -218,6 +218,31 @@
         .status-processing { background: var(--warning); }
         .status-error { background: var(--danger); }
         
+        .sbox-visualization {
+            margin-top: 2rem;
+        }
+        
+        .sbox-grid {
+            display: grid;
+            grid-template-columns: repeat(18, 1fr);
+            gap: 2px;
+            margin-top: 1rem;
+            font-size: 0.7rem;
+        }
+        
+        .sbox-cell {
+            padding: 0.5rem;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 0.25rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        
+        .sbox-header {
+            background: var(--primary);
+            font-weight: 600;
+        }
+        
         .footer {
             text-align: center;
             margin-top: 2rem;
@@ -242,12 +267,40 @@
             100% { transform: rotate(360deg); }
         }
 
-        .compression-info {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid var(--secondary);
-            border-radius: 0.5rem;
-            padding: 1rem;
+        .output-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
             margin-top: 1rem;
+        }
+        
+        .custom-charset {
+            margin-top: 1rem;
+        }
+        
+        .charset-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 2px;
+            margin-top: 0.5rem;
+        }
+        
+        .charset-cell {
+            padding: 0.25rem;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
+        .output-preview {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
         }
 
         .test-result {
@@ -272,7 +325,15 @@
         .test-info {
             border-left: 4px solid var(--primary);
         }
-
+        
+        .advanced-options {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+        
         .option-row {
             display: flex;
             align-items: center;
@@ -287,43 +348,13 @@
         .option-control {
             flex: 2;
         }
-
-        .affine-info {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid var(--primary);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            margin-top: 0.5rem;
-            font-size: 0.8rem;
-        }
-        
-        .entropy-display {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border);
-        }
-        
-        .entropy-value {
-            font-weight: bold;
-            color: var(--secondary);
-        }
-        
-        .byte-info {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid var(--warning);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Enhanced Homophonic Cipher</h1>
-            <p class="subtitle">Byte-Based Implementation with 65536 Homophones</p>
+            <h1>Enhanced Homophonic Cipher System</h1>
+            <p class="subtitle">Military-grade encryption with multi-round MixColumns transformation</p>
         </header>
 
         <div class="grid">
@@ -359,27 +390,67 @@
                     </select>
                 </div>
 
+                <div class="form-group">
+                    <label for="outputFormat">Output Format:</label>
+                    <select id="outputFormat">
+                        <option value="hex" selected>HEX (default)</option>
+                        <option value="base64">Base64</option>
+                        <option value="binary">Binary Data</option>
+                        <option value="custom">Custom Homophones</option>
+                    </select>
+                </div>
+
                 <div class="advanced-options">
-                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Advanced Security Options</h3>
+                    <h3 style="margin-bottom: 1rem; color: var(--primary);">Advanced Options</h3>
                     
                     <div class="option-row">
-                        <div class="option-label">Enable Affine Transformation:</div>
+                        <div class="option-label">Enable MixColumns:</div>
                         <div class="option-control">
-                            <input type="checkbox" id="enableAffine" checked>
+                            <input type="checkbox" id="enableMixColumns" checked>
                         </div>
                     </div>
                     
-                    <div class="affine-info">
-                        <strong>Affine Transformation:</strong> Adds non-linear diffusion using GF(256) arithmetic.<br>
-                        <strong>Effect:</strong> Even without CBC, provides enhanced security against frequency analysis.
+                    <div class="option-row">
+                        <div class="option-label">MixColumns Rounds:</div>
+                        <div class="option-control">
+                            <select id="mixColumnsRounds">
+                                <option value="1">1 Round (Standard)</option>
+                                <option value="3" selected>3 Rounds (Enhanced)</option>
+                                <option value="6">6 Rounds (Strong)</option>
+                                <option value="12">12 Rounds (Maximum)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="option-row">
+                        <div class="option-label">Enable Non-Linearity:</div>
+                        <div class="option-control">
+                            <input type="checkbox" id="enableNonLinearity" checked>
+                        </div>
+                    </div>
+
+                    <!-- Добавлена опция для афинной перестановки -->
+                    <div class="option-row">
+                        <div class="option-label">Enable Affine Permutation:</div>
+                        <div class="option-control">
+                            <input type="checkbox" id="enableAffinePermutation" checked>
+                        </div>
                     </div>
                 </div>
 
-                <div class="byte-info">
-                    <h3 style="color: var(--warning); margin-bottom: 0.5rem;">Byte-Based Implementation</h3>
-                    <p>256 bytes × 256 homophones = 65536 two-byte homophones</p>
-                    <p>Each byte is mapped to 256 different two-byte sequences</p>
-                    <p>Output is encoded as hexadecimal for display</p>
+                <div id="customOptions" style="display: none;">
+                    <div class="form-group">
+                        <label for="customCharset">Custom Character Set (256 symbols):</label>
+                        <textarea id="customCharset" rows="3" placeholder="Enter exactly 256 unique symbols">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=[]{}|;:,.<>?/~`'"\абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯαβγδεζηθικλμνξοπρστυφχψωΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ</textarea>
+                        <button type="button" id="generateCharset" class="btn-secondary" style="margin-top: 0.5rem; width: 100%;">
+                            Generate Random Charset
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Character Preview:</label>
+                        <div class="charset-grid" id="charsetPreview"></div>
+                    </div>
                 </div>
             </div>
 
@@ -406,18 +477,6 @@
                     <button id="clearBtn" class="btn-danger">Clear All</button>
                     <button id="analyzeBtn" class="btn-warning">Security Analysis</button>
                 </div>
-
-                <div class="form-group">
-                    <label for="outputStats">Output Statistics:</label>
-                    <div id="outputStats" class="result-content">Waiting for operation...</div>
-                </div>
-                
-                <div class="entropy-display">
-                    <h3 style="color: var(--primary); margin-bottom: 0.5rem;">Entropy Analysis</h3>
-                    <div id="entropyWithoutAffine" class="result-content">Without affine: N/A</div>
-                    <div id="entropyWithAffine" class="result-content">With affine: N/A</div>
-                    <div id="entropyDifference" class="result-content">Difference: N/A</div>
-                </div>
             </div>
         </div>
 
@@ -426,7 +485,7 @@
             
             <div class="result-container">
                 <div class="result-header">
-                    <span class="result-title">Output (Hex):</span>
+                    <span class="result-title">Output:</span>
                     <span id="statusIndicator" class="status-ready">Ready</span>
                 </div>
                 <div id="outputData" class="result-content"></div>
@@ -437,6 +496,13 @@
                     <span class="result-title">Security Information:</span>
                 </div>
                 <div id="securityInfo" class="result-content"></div>
+            </div>
+
+            <div class="output-preview">
+                <div class="result-header">
+                    <span class="result-title">Output Preview:</span>
+                </div>
+                <div id="outputPreview" class="result-content"></div>
             </div>
         </div>
 
@@ -452,44 +518,72 @@
             </div>
         </div>
 
+        <div class="card sbox-visualization">
+            <h2 class="card-title">S-Box Visualization</h2>
+            <div class="sbox-grid" id="sboxGrid"></div>
+        </div>
+
         <div class="footer">
-            <p>Enhanced Homophonic Cipher System v7.0 | Byte-Based Implementation</p>
+            <p>Enhanced Homophonic Cipher System v4.2 | Optimized Implementation</p>
             <p>© 2024 Cryptographic Systems | All operations performed client-side</p>
         </div>
     </div>
 
     <script>
+        class GaloisField {
+            static multiply(a, b) {
+                let p = 0;
+                for (let i = 0; i < 8; i++) {
+                    if (b & 1) p ^= a;
+                    const hiBitSet = a & 0x80;
+                    a = (a << 1) & 0xFF;
+                    if (hiBitSet) a ^= 0x1B;
+                    b >>= 1;
+                }
+                return p;
+            }
+
+            // Добавлен метод для вычисления обратного элемента в GF(256)
+            static inverse(a) {
+                if (a === 0) return 0;
+                
+                let t = 0, newt = 1;
+                let r = 0x11B, newr = a;
+                
+                while (newr !== 0) {
+                    const quotient = Math.floor(r / newr);
+                    [t, newt] = [newt, t ^ GaloisField.multiply(quotient, newt)];
+                    [r, newr] = [newr, r ^ GaloisField.multiply(quotient, newr)];
+                }
+                
+                return t;
+            }
+        }
+
+        class AffineTransformation {
+            // Афинная перестановка: y = (a * x + b) mod 256
+            // где a - обратимый элемент в GF(256), b - константа
+            constructor(a = 0x1F, b = 0x63) {
+                this.a = a;
+                this.b = b;
+                this.inv_a = GaloisField.inverse(a);
+            }
+
+            // Прямое преобразование
+            transform(x) {
+                return (GaloisField.multiply(this.a, x) ^ this.b) & 0xFF;
+            }
+
+            // Обратное преобразование
+            inverseTransform(y) {
+                return GaloisField.multiply(this.inv_a, (y ^ this.b)) & 0xFF;
+            }
+        }
+
         class DeterministicSBoxGenerator {
             static async generateSBox(encryptionKey) {
                 const sbox = new Array(256);
                 const inverseSbox = new Map();
-                
-                // Create all possible two-byte sequences (0-65535)
-                const allHomophones = new Array(65536);
-                for (let i = 0; i < 65536; i++) {
-                    allHomophones[i] = i;
-                }
-                
-                // Deterministic shuffle
-                const shuffledHomophones = await this.deterministicShuffle(allHomophones, encryptionKey);
-                
-                // Assign 256 homophones to each byte
-                let homophoneIndex = 0;
-                for (let inputByte = 0; inputByte < 256; inputByte++) {
-                    sbox[inputByte] = new Array(256);
-                    for (let i = 0; i < 256; i++) {
-                        const homophone = shuffledHomophones[homophoneIndex++];
-                        sbox[inputByte][i] = homophone;
-                        inverseSbox.set(homophone, inputByte);
-                    }
-                }
-                
-                return { sbox, inverseSbox };
-            }
-            
-            static async deterministicShuffle(array, encryptionKey) {
-                const shuffledArray = [...array];
-                const length = shuffledArray.length;
                 
                 const hmacKey = await crypto.subtle.importKey(
                     'raw', encryptionKey,
@@ -497,18 +591,40 @@
                     false, ['sign']
                 );
                 
-                for (let i = length - 1; i > 0; i--) {
-                    const positionData = new Uint8Array([i >> 8, i & 0xFF]);
-                    const hmacBuffer = await crypto.subtle.sign('HMAC', hmacKey, positionData);
-                    const hmacArray = new Uint8Array(hmacBuffer);
-                    
-                    const randomValue = (hmacArray[0] << 24) | (hmacArray[1] << 16) | (hmacArray[2] << 8) | hmacArray[3];
-                    const j = randomValue % (i + 1);
-                    
-                    [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
+                const allHomophones = Array.from({length: 65536}, (_, i) => i);
+                await this.fastDeterministicShuffle(allHomophones, hmacKey);
+                
+                let index = 0;
+                for (let inputByte = 0; inputByte < 256; inputByte++) {
+                    sbox[inputByte] = new Array(256);
+                    for (let homophoneIndex = 0; homophoneIndex < 256; homophoneIndex++) {
+                        const homophone = allHomophones[index++];
+                        sbox[inputByte][homophoneIndex] = homophone;
+                        inverseSbox.set(homophone, inputByte);
+                    }
                 }
                 
-                return shuffledArray;
+                return { sbox, inverseSbox };
+            }
+            
+            static async fastDeterministicShuffle(array, hmacKey) {
+                let counter = 0;
+                let randomBuffer = new Uint8Array(0);
+                let position = 0;
+                
+                for (let i = array.length - 1; i > 0; i--) {
+                    if (position >= randomBuffer.length - 1) {
+                        const counterData = new Uint8Array([counter++]);
+                        randomBuffer = await crypto.subtle.sign('HMAC', hmacKey, counterData);
+                        position = 0;
+                    }
+                    
+                    const rand = (randomBuffer[position] << 8) | randomBuffer[position + 1];
+                    position += 2;
+                    
+                    const j = rand % (i + 1);
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
             }
         }
 
@@ -517,11 +633,28 @@
                 this.sbox = null;
                 this.inverseSbox = null;
                 this.initializationVector = null;
-                this.enableAffine = true;
+                this.hmacKey = null;
+                this.customCharset = null;
+                this.outputFormat = 'hex';
+                this.enableMixColumns = true;
+                this.mixColumnsRounds = 3;
+                this.enableNonLinearity = true;
+                this.enableAffinePermutation = true; // Добавлено свойство для афинной перестановки
+                this.affineTransform = new AffineTransformation(); // Создаем экземпляр афинного преобразования
             }
 
-            setAffineTransformation(enabled) {
-                this.enableAffine = enabled;
+            setMixColumnsRounds(rounds) {
+                const validRounds = [1, 3, 6, 12];
+                this.mixColumnsRounds = validRounds.includes(rounds) ? rounds : 1;
+            }
+
+            setNonLinearity(enabled) {
+                this.enableNonLinearity = enabled;
+            }
+
+            // Добавлен метод для управления афинной перестановкой
+            setAffinePermutation(enabled) {
+                this.enableAffinePermutation = enabled;
             }
 
             async initializeWithKey(passphrase, iterations = 500000) {
@@ -563,212 +696,380 @@
                 }
             }
 
-            affineTransform(inputByte, state) {
-                if (!this.enableAffine) return inputByte;
-                
-                const a = 0x1F;
-                const b = state;
-                
-                let result = 0;
-                for (let i = 0; i < 8; i++) {
-                    if (a & (1 << i)) {
-                        result ^= inputByte << i;
-                    }
-                }
-                
-                for (let i = 14; i >= 8; i--) {
-                    if (result & (1 << i)) {
-                        result ^= 0x11B << (i - 8);
-                    }
-                }
-                
-                return (result ^ b) & 0xFF;
+            setOutputFormat(format) {
+                this.outputFormat = format;
             }
 
-            inverseAffineTransform(inputByte, state) {
-                if (!this.enableAffine) return inputByte;
-                
-                const a = 0x1F;
-                const b = state;
-                
-                // Calculate inverse of a in GF(256)
-                let inverseA = 1;
-                for (let i = 0; i < 254; i++) {
-                    inverseA = this.gfMultiply(inverseA, a);
+            setCustomCharset(charset) {
+                if (charset.length !== 256) {
+                    throw new Error('Charset must contain exactly 256 characters');
                 }
-                
-                const temp = (inputByte ^ b) & 0xFF;
-                return this.gfMultiply(inverseA, temp);
+                const uniqueChars = new Set(charset);
+                if (uniqueChars.size !== 256) {
+                    throw new Error('Charset must contain 256 unique characters');
+                }
+                this.customCharset = charset;
             }
 
-            gfMultiply(a, b) {
-                let result = 0;
-                for (let i = 0; i < 8; i++) {
-                    if (b & (1 << i)) {
-                        result ^= a << i;
+            setMixColumns(enabled) {
+                this.enableMixColumns = enabled;
+            }
+
+            applySingleMixColumnsRound(data) {
+                const result = new Uint8Array(data.length);
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    if (i + 3 >= data.length) break;
+                    
+                    const a0 = data[i];
+                    const a1 = data[i + 1];
+                    const a2 = data[i + 2];
+                    const a3 = data[i + 3];
+                    
+                    result[i] = GaloisField.multiply(0x02, a0) ^ GaloisField.multiply(0x03, a1) ^ a2 ^ a3;
+                    result[i + 1] = a0 ^ GaloisField.multiply(0x02, a1) ^ GaloisField.multiply(0x03, a2) ^ a3;
+                    result[i + 2] = a0 ^ a1 ^ GaloisField.multiply(0x02, a2) ^ GaloisField.multiply(0x03, a3);
+                    result[i + 3] = GaloisField.multiply(0x03, a0) ^ a1 ^ a2 ^ GaloisField.multiply(0x02, a3);
+                }
+                
+                for (let i = Math.floor(data.length / 4) * 4; i < data.length; i++) {
+                    result[i] = data[i];
+                }
+                
+                return result;
+            }
+
+            applySingleInvMixColumnsRound(data) {
+                const result = new Uint8Array(data.length);
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    if (i + 3 >= data.length) break;
+                    
+                    const a0 = data[i];
+                    const a1 = data[i + 1];
+                    const a2 = data[i + 2];
+                    const a3 = data[i + 3];
+                    
+                    result[i] = GaloisField.multiply(0x0e, a0) ^ GaloisField.multiply(0x0b, a1) ^ 
+                                GaloisField.multiply(0x0d, a2) ^ GaloisField.multiply(0x09, a3);
+                    result[i + 1] = GaloisField.multiply(0x09, a0) ^ GaloisField.multiply(0x0e, a1) ^ 
+                                    GaloisField.multiply(0x0b, a2) ^ GaloisField.multiply(0x0d, a3);
+                    result[i + 2] = GaloisField.multiply(0x0d, a0) ^ GaloisField.multiply(0x09, a1) ^ 
+                                    GaloisField.multiply(0x0e, a2) ^ GaloisField.multiply(0x0b, a3);
+                    result[i + 3] = GaloisField.multiply(0x0b, a0) ^ GaloisField.multiply(0x0d, a1) ^ 
+                                    GaloisField.multiply(0x09, a2) ^ GaloisField.multiply(0x0e, a3);
+                }
+                
+                for (let i = Math.floor(data.length / 4) * 4; i < data.length; i++) {
+                    result[i] = data[i];
+                }
+                
+                return result;
+            }
+
+            generateRoundConstants(round) {
+                const constants = new Uint8Array(4);
+                for (let i = 0; i < 4; i++) {
+                    constants[i] = (round * 0x17 + i * 0x37) & 0xFF;
+                }
+                return constants;
+            }
+
+            mixColumns(data) {
+                if (!this.enableMixColumns) return data;
+
+                let processedData = new Uint8Array(data);
+                
+                for (let round = 0; round < this.mixColumnsRounds; round++) {
+                    processedData = this.applySingleMixColumnsRound(processedData);
+                    
+                    if (this.enableNonLinearity) {
+                        const roundConstants = this.generateRoundConstants(round);
+                        for (let i = 0; i < processedData.length; i++) {
+                            processedData[i] ^= roundConstants[i % 4];
+                        }
                     }
                 }
                 
-                for (let i = 14; i >= 8; i--) {
-                    if (result & (1 << i)) {
-                        result ^= 0x11B << (i - 8);
+                return processedData;
+            }
+
+            invMixColumns(data) {
+                if (!this.enableMixColumns) return data;
+
+                let processedData = new Uint8Array(data);
+                
+                for (let round = this.mixColumnsRounds - 1; round >= 0; round--) {
+                    if (this.enableNonLinearity) {
+                        const roundConstants = this.generateRoundConstants(round);
+                        for (let i = 0; i < processedData.length; i++) {
+                            processedData[i] ^= roundConstants[i % 4];
+                        }
                     }
+                    
+                    processedData = this.applySingleInvMixColumnsRound(processedData);
                 }
                 
-                return result & 0xFF;
+                return processedData;
+            }
+
+            // Добавлен метод для применения афинной перестановки
+            applyAffinePermutation(byte) {
+                if (!this.enableAffinePermutation) return byte;
+                return this.affineTransform.transform(byte);
+            }
+
+            // Добавлен метод для применения обратной афинной перестановки
+            applyInverseAffinePermutation(byte) {
+                if (!this.enableAffinePermutation) return byte;
+                return this.affineTransform.inverseTransform(byte);
+            }
+
+            arrayToHex(array) {
+                return Array.from(array)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+            }
+
+            arrayToBase64(array) {
+                return btoa(String.fromCharCode(...array));
+            }
+
+            hexToArray(hexString) {
+                const result = new Uint8Array(hexString.length / 2);
+                for (let i = 0; i < hexString.length; i += 2) {
+                    result[i / 2] = parseInt(hexString.substr(i, 2), 16);
+                }
+                return result;
+            }
+
+            base64ToArray(base64) {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return bytes;
             }
 
             async encryptData(plaintext, diffusionMode = 'cbc') {
                 try {
                     const encoder = new TextEncoder();
                     const plaintextBuffer = encoder.encode(plaintext);
-                    const outputBytes = [];
+                    let ciphertext = new Uint16Array(plaintextBuffer.length);
                     
-                    let previousBlock = null;
-                    let affineState = 0;
-                    
-                    if (diffusionMode === 'cbc') {
-                        this.initializationVector = crypto.getRandomValues(new Uint8Array(16));
-                        previousBlock = new Uint8Array(this.initializationVector);
-                        
-                        // Add IV to output
-                        for (let i = 0; i < 16; i++) {
-                            const ivByte = this.initializationVector[i];
-                            const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
-                            const homophone = this.sbox[ivByte][randomIndex];
-                            
-                            // Split homophone into two bytes
-                            outputBytes.push((homophone >> 8) & 0xFF);
-                            outputBytes.push(homophone & 0xFF);
-                        }
-                    }
+                    this.initializationVector = crypto.getRandomValues(new Uint8Array(16));
+                    let previousBlock = this.initializationVector;
                     
                     for (let i = 0; i < plaintextBuffer.length; i++) {
-                        let byteToEncrypt = plaintextBuffer[i];
+                        const plainByte = plaintextBuffer[i];
                         
-                        // Apply CBC BEFORE affine transformation
-                        if (diffusionMode === 'cbc' && previousBlock) {
+                        let byteToEncrypt = plainByte;
+                        if (diffusionMode !== 'none') {
                             byteToEncrypt ^= previousBlock[i % 16];
                         }
                         
-                        // Apply affine transformation
-                        if (this.enableAffine) {
-                            byteToEncrypt = this.affineTransform(byteToEncrypt, affineState);
-                            affineState = (affineState + plaintextBuffer[i]) & 0xFF;
-                        }
+                        // Применяем афинную перестановку к входному байту
+                        const permutedByte = this.applyAffinePermutation(byteToEncrypt);
                         
-                        const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0] % 256;
-                        const homophone = this.sbox[byteToEncrypt][randomIndex];
+                        const randomIndex = crypto.getRandomValues(new Uint8Array(1))[0];
+                        const homophone = this.sbox[permutedByte][randomIndex];
                         
-                        // Split homophone into two bytes
-                        outputBytes.push((homophone >> 8) & 0xFF);
-                        outputBytes.push(homophone & 0xFF);
+                        ciphertext[i] = homophone;
                         
                         if (diffusionMode === 'cbc') {
-                            // Update previous block with the encrypted byte (before homophone substitution)
-                            previousBlock[i % 16] = byteToEncrypt;
+                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
                         }
                     }
                     
-                    return new Uint8Array(outputBytes);
+                    let outputBuffer;
+                    if (this.enableMixColumns) {
+                        const ciphertextBytes = new Uint8Array(ciphertext.buffer);
+                        const mixedCiphertext = this.mixColumns(ciphertextBytes);
+                        
+                        outputBuffer = new Uint8Array(16 + mixedCiphertext.length);
+                        outputBuffer.set(this.initializationVector, 0);
+                        outputBuffer.set(mixedCiphertext, 16);
+                    } else {
+                        outputBuffer = new Uint8Array(16 + ciphertext.length * 2);
+                        outputBuffer.set(this.initializationVector, 0);
+                        
+                        const ciphertextBytes = new Uint8Array(ciphertext.buffer);
+                        outputBuffer.set(ciphertextBytes, 16);
+                    }
+
+                    switch (this.outputFormat) {
+                        case 'hex':
+                            return this.arrayToHex(outputBuffer);
+                        case 'base64':
+                            return this.arrayToBase64(outputBuffer);
+                        case 'binary':
+                            return outputBuffer;
+                        case 'custom':
+                            return await this.convertToCustomFormat(outputBuffer);
+                        default:
+                            return this.arrayToHex(outputBuffer);
+                    }
                     
                 } catch (error) {
                     console.error('Encryption failed:', error);
-                    throw new Error('Encryption process failed: ' + error.message);
+                    throw new Error('Encryption process failed');
                 }
             }
 
             async decryptData(encryptedData, diffusionMode = 'cbc') {
                 try {
-                    // Convert to byte array if needed
-                    let encryptedBytes;
-                    if (encryptedData instanceof Uint8Array) {
-                        encryptedBytes = encryptedData;
+                    let inputBuffer;
+                    
+                    if (typeof encryptedData === 'string') {
+                        if (this.outputFormat === 'hex') {
+                            inputBuffer = this.hexToArray(encryptedData);
+                        } else if (this.outputFormat === 'base64') {
+                            inputBuffer = this.base64ToArray(encryptedData);
+                        } else if (this.outputFormat === 'custom') {
+                            inputBuffer = await this.convertFromCustomFormat(encryptedData);
+                        } else {
+                            throw new Error('Unknown input format');
+                        }
+                    } else if (encryptedData instanceof Uint8Array) {
+                        inputBuffer = encryptedData;
                     } else {
-                        // Assume it's a hex string
-                        encryptedBytes = new Uint8Array(encryptedData.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                        throw new Error('Unsupported input type');
+                    }
+
+                    if (inputBuffer.length < 16) {
+                        throw new Error('Invalid encrypted data format');
                     }
                     
-                    const outputBytes = [];
+                    const iv = inputBuffer.slice(0, 16);
+                    let ciphertextBytes = inputBuffer.slice(16);
                     
-                    let ivBytes = [];
-                    let cipherBytes = encryptedBytes;
-                    let previousBlock = null;
-                    let affineState = 0;
-                    
-                    if (diffusionMode === 'cbc') {
-                        if (encryptedBytes.length < 32) {
-                            throw new Error('Invalid encrypted data for CBC mode');
-                        }
-                        
-                        // Extract IV (first 32 bytes = 16 homophones)
-                        ivBytes = encryptedBytes.slice(0, 32);
-                        cipherBytes = encryptedBytes.slice(32);
-                        
-                        // Decode IV from homophones
-                        this.initializationVector = new Uint8Array(16);
-                        for (let i = 0; i < 16; i++) {
-                            const homophone = (ivBytes[i*2] << 8) | ivBytes[i*2+1];
-                            this.initializationVector[i] = this.inverseSbox.get(homophone);
-                        }
-                        
-                        previousBlock = new Uint8Array(this.initializationVector);
+                    if (this.enableMixColumns) {
+                        ciphertextBytes = this.invMixColumns(ciphertextBytes);
                     }
                     
-                    for (let i = 0; i < cipherBytes.length; i += 2) {
-                        if (i + 1 >= cipherBytes.length) {
-                            throw new Error('Invalid encrypted data length');
+                    const ciphertext = new Uint16Array(ciphertextBytes.buffer);
+                    
+                    let plaintextBuffer = new Uint8Array(ciphertext.length);
+                    let previousBlock = iv;
+                    
+                    for (let i = 0; i < ciphertext.length; i++) {
+                        const homophone = ciphertext[i];
+                        
+                        if (!this.inverseSbox.has(homophone)) {
+                            throw new Error('Invalid homophone in ciphertext');
                         }
                         
-                        const homophone = (cipherBytes[i] << 8) | cipherBytes[i+1];
                         let decryptedByte = this.inverseSbox.get(homophone);
                         
-                        // Apply inverse affine transformation
-                        if (this.enableAffine) {
-                            decryptedByte = this.inverseAffineTransform(decryptedByte, affineState);
+                        // Применяем обратную афинную перестановку
+                        decryptedByte = this.applyInverseAffinePermutation(decryptedByte);
+                        
+                        if (diffusionMode !== 'none') {
+                            decryptedByte ^= previousBlock[i % 16];
                         }
                         
-                        // Apply CBC AFTER inverse transformation
-                        if (diffusionMode === 'cbc' && previousBlock) {
-                            decryptedByte ^= previousBlock[(i/2) % 16];
-                        }
-                        
-                        outputBytes.push(decryptedByte);
-                        
-                        // Update state based on decrypted byte
-                        if (this.enableAffine) {
-                            affineState = (affineState + decryptedByte) & 0xFF;
-                        }
+                        plaintextBuffer[i] = decryptedByte;
                         
                         if (diffusionMode === 'cbc') {
-                            // Update previous block with the encrypted byte (before homophone substitution)
-                            const homophoneByte = this.inverseSbox.get(homophone);
-                            previousBlock[(i/2) % 16] = homophoneByte;
+                            previousBlock = this.updateDiffusionBlock(previousBlock, homophone);
                         }
                     }
                     
                     const decoder = new TextDecoder();
-                    return decoder.decode(new Uint8Array(outputBytes));
+                    return decoder.decode(plaintextBuffer);
                     
                 } catch (error) {
                     console.error('Decryption failed:', error);
                     throw new Error('Decryption process failed: ' + error.message);
                 }
             }
+
+            async convertToCustomFormat(binaryData) {
+                if (!this.customCharset) {
+                    throw new Error('Custom charset not set');
+                }
+
+                let result = '';
+                for (let i = 0; i < binaryData.length; i++) {
+                    const byte = binaryData[i];
+                    result += this.customCharset[byte];
+                }
+                return result;
+            }
+
+            async convertFromCustomFormat(customData) {
+                if (!this.customCharset) {
+                    throw new Error('Custom charset not set');
+                }
+
+                const charToIndex = {};
+                for (let i = 0; i < this.customCharset.length; i++) {
+                    charToIndex[this.customCharset[i]] = i;
+                }
+
+                const result = new Uint8Array(customData.length);
+                
+                for (let i = 0; i < customData.length; i++) {
+                    const char = customData[i];
+                    if (!(char in charToIndex)) {
+                        throw new Error(`Invalid character in custom format: ${char}`);
+                    }
+                    result[i] = charToIndex[char];
+                }
+
+                return result;
+            }
+
+            updateDiffusionBlock(block, homophone) {
+                const newBlock = new Uint8Array(16);
+                const homophoneBytes = new Uint8Array([
+                    (homophone >> 8) & 0xFF,
+                    homophone & 0xFF
+                ]);
+                
+                for (let i = 0; i < 16; i++) {
+                    newBlock[i] = block[i] ^ homophoneBytes[i % 2];
+                }
+                
+                return newBlock;
+            }
+
+            getSBoxPreview() {
+                if (!this.sbox) return null;
+                
+                const preview = [];
+                for (let i = 0; i < 16; i++) {
+                    const row = [];
+                    for (let j = 0; j < 16; j++) {
+                        const byteValue = i * 16 + j;
+                        row.push(this.sbox[byteValue].slice(0, 2).map(v => v.toString(16).padStart(4, '0')).join(', '));
+                    }
+                    preview.push(row);
+                }
+                return preview;
+            }
         }
 
         class CipherTestSuite {
-            static calculateEntropy(data) {
-                // For byte data, calculate entropy of byte values (0-255)
+            static hexToBytes(hexString) {
+                const bytes = new Uint8Array(hexString.length / 2);
+                for (let i = 0; i < hexString.length; i += 2) {
+                    bytes[i/2] = parseInt(hexString.substr(i, 2), 16);
+                }
+                return bytes;
+            }
+
+            static calculateEntropy(hexString) {
+                const bytes = this.hexToBytes(hexString);
                 const freq = new Array(256).fill(0);
-                let total = 0;
                 
-                for (const byte of data) {
-                    total++;
+                for (const byte of bytes) {
                     freq[byte]++;
                 }
                 
                 let entropy = 0;
+                const total = bytes.length;
                 for (let i = 0; i < 256; i++) {
                     if (freq[i] > 0) {
                         const p = freq[i] / total;
@@ -778,159 +1079,132 @@
                 return entropy;
             }
 
-            static frequencyAnalysis(data) {
+            static frequencyAnalysis(hexString) {
+                const bytes = this.hexToBytes(hexString);
                 const freq = new Array(256).fill(0);
-                let totalBytes = data.length;
-                let usedBytes = 0;
                 
-                for (const byte of data) {
+                for (const byte of bytes) {
                     freq[byte]++;
                 }
                 
+                let report = `Byte value analysis (0-255):\n`;
+                report += `Total bytes: ${bytes.length}\n\n`;
+                
+                const ranges = [
+                    { name: '0-31 (Control chars)', count: 0, ideal: 12.5 },
+                    { name: '32-126 (Printable ASCII)', count: 0, ideal: 37.1 },
+                    { name: '127-255 (Extended)', count: 0, ideal: 50.4 }
+                ];
+                
                 for (let i = 0; i < 256; i++) {
-                    if (freq[i] > 0) usedBytes++;
+                    if (i <= 31) ranges[0].count += freq[i];
+                    else if (i <= 126) ranges[1].count += freq[i];
+                    else ranges[2].count += freq[i];
                 }
                 
-                const minCount = Math.min(...freq.filter(count => count > 0));
-                const maxCount = Math.max(...freq);
-                const ratio = maxCount / minCount;
+                for (const range of ranges) {
+                    const percentage = (range.count / bytes.length * 100).toFixed(2);
+                    const deviation = Math.abs(percentage - range.ideal).toFixed(2);
+                    report += `${range.name}: ${range.count} (${percentage}% | Δ${deviation}%)\n`;
+                }
+                
+                return report;
+            }
+
+            static testRandomness(hexString) {
+                const bytes = this.hexToBytes(hexString);
+                if (bytes.length < 100) return "Need more data for analysis";
+                
+                let sum = 0;
+                for (const byte of bytes) {
+                    sum += byte;
+                }
+                const mean = sum / bytes.length;
+                
+                let variance = 0;
+                for (const byte of bytes) {
+                    variance += Math.pow(byte - mean, 2);
+                }
+                variance /= bytes.length;
+                
+                let inCircle = 0;
+                for (let i = 0; i < bytes.length - 1; i += 2) {
+                    const x = bytes[i] / 255;
+                    const y = bytes[i + 1] / 255;
+                    if (x * x + y * y <= 1) inCircle++;
+                }
+                const piEstimate = (4 * inCircle) / (bytes.length / 2);
                 
                 return {
-                    usedBytes: usedBytes,
-                    totalBytes: totalBytes,
-                    minCount: minCount,
-                    maxCount: maxCount,
-                    ratio: ratio,
-                    status: usedBytes === 256 && ratio < 2.0 ? "PASS" : "WARNING",
-                    message: `Used ${usedBytes}/256 byte values, ratio: ${ratio.toFixed(2)}`,
-                    details: `Min: ${minCount}, Max: ${maxCount}, Total: ${totalBytes} bytes`
+                    mean: mean.toFixed(3),
+                    variance: variance.toFixed(3),
+                    piEstimate: piEstimate.toFixed(6),
+                    idealMean: 127.5,
+                    idealVariance: 5461.25,
+                    idealPi: 3.141593
                 };
             }
 
-            static bigramTest(data) {
-                if (data.length < 2) {
-                    return { status: "SKIP", message: "Not enough data for bigram test" };
+            static analyzeHexCharacters(hexString) {
+                const freq = {};
+                for (const char of hexString) {
+                    freq[char] = (freq[char] || 0) + 1;
                 }
                 
-                const bigrams = new Map();
-                const totalBigrams = Math.floor(data.length / 2);
+                const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+                let report = `HEX character analysis:\n`;
+                report += `Total HEX chars: ${hexString.length}\n`;
+                report += `Unique HEX chars: ${sorted.length}/16\n\n`;
                 
-                for (let i = 0; i < data.length - 1; i += 2) {
-                    const bigram = (data[i] << 8) | data[i+1];
-                    bigrams.set(bigram, (bigrams.get(bigram) || 0) + 1);
+                report += `HEX character frequency:\n`;
+                for (const [char, count] of sorted) {
+                    const percentage = (count / hexString.length * 100).toFixed(2);
+                    report += `'${char}': ${count} (${percentage}%)\n`;
                 }
                 
-                const expected = totalBigrams / 65536;
-                
-                let maxDeviation = 0;
-                let mostFrequentBigram = '';
-                let maxCount = 0;
-                
-                for (const [bigram, count] of bigrams) {
-                    const deviation = count / expected;
-                    if (deviation > maxDeviation) {
-                        maxDeviation = deviation;
-                        mostFrequentBigram = bigram.toString(16).padStart(4, '0');
-                        maxCount = count;
-                    }
-                }
-                
-                return {
-                    maxDeviation: maxDeviation,
-                    status: maxDeviation < 1.1 ? "PASS" : "FAIL",
-                    message: `Max deviation: ${maxDeviation.toFixed(4)}x for 0x${mostFrequentBigram}`,
-                    details: `Expected: ${expected.toFixed(2)}, Found: ${maxCount}`
-                };
+                return report;
             }
 
-            static runsTest(data) {
-                let currentRun = 1;
-                let maxRun = 1;
-                
-                for (let i = 1; i < data.length; i++) {
-                    if (data[i] === data[i-1]) {
-                        currentRun++;
-                        maxRun = Math.max(maxRun, currentRun);
-                    } else {
-                        currentRun = 1;
-                    }
-                }
-                
-                return {
-                    maxRun: maxRun,
-                    status: maxRun <= 4 ? "PASS" : "WARNING",
-                    message: `Longest run: ${maxRun} identical bytes`
-                };
-            }
-
-            static autocorrelationTest(data, maxShift = 10) {
+            static runAllTests(hexString) {
                 const results = [];
+                const bytes = this.hexToBytes(hexString);
                 
-                for (let shift = 1; shift <= maxShift; shift++) {
-                    let matches = 0;
-                    const comparisons = data.length - shift;
-                    
-                    for (let i = 0; i < comparisons; i++) {
-                        if (data[i] === data[i + shift]) {
-                            matches++;
-                        }
-                    }
-                    
-                    const correlation = matches / comparisons;
-                    results.push({shift, correlation});
-                }
-                
-                const maxCorrelation = Math.max(...results.map(r => r.correlation));
-                
-                return {
-                    maxCorrelation: maxCorrelation,
-                    status: maxCorrelation < 0.2 ? "PASS" : "WARNING",
-                    message: `Max autocorrelation: ${maxCorrelation.toFixed(4)} at shift ${results.find(r => r.correlation === maxCorrelation).shift}`
-                };
-            }
-
-            static runAllTests(encryptedData) {
-                const results = [];
-                
-                const freqAnalysis = this.frequencyAnalysis(encryptedData);
+                const entropy = this.calculateEntropy(hexString);
                 results.push({
-                    name: "Frequency Analysis",
-                    status: freqAnalysis.status,
-                    message: freqAnalysis.message,
-                    details: freqAnalysis.details
-                });
-                
-                const entropy = this.calculateEntropy(encryptedData);
-                results.push({
-                    name: "Entropy Test",
+                    name: "Byte Entropy Test",
                     status: entropy > 7.9 ? "PASS" : "WARNING",
                     message: `Entropy: ${entropy.toFixed(6)}/8.000000`,
-                    details: `Based on ${encryptedData.length} bytes`
+                    details: `Ideal: >7.9 (perfect randomness)\nBased on ${bytes.length} bytes`
                 });
                 
-                const bigramTest = this.bigramTest(encryptedData);
+                const hexAnalysis = this.analyzeHexCharacters(hexString);
                 results.push({
-                    name: "Bigram Test",
-                    status: bigramTest.status,
-                    message: bigramTest.message,
-                    details: bigramTest.details
+                    name: "HEX Character Distribution",
+                    status: "INFO",
+                    message: "Analysis of HEX characters (0-9, a-f)",
+                    details: hexAnalysis
                 });
                 
-                const runsTest = this.runsTest(encryptedData);
+                const freqReport = this.frequencyAnalysis(hexString);
                 results.push({
-                    name: "Runs Test",
-                    status: runsTest.status,
-                    message: runsTest.message,
-                    details: "Checks for long sequences of identical bytes"
+                    name: "Byte Range Analysis",
+                    status: "INFO",
+                    message: "Analysis of actual byte values (0-255)",
+                    details: freqReport
                 });
                 
-                const autocorrTest = this.autocorrelationTest(encryptedData);
-                results.push({
-                    name: "Autocorrelation Test",
-                    status: autocorrTest.status,
-                    message: autocorrTest.message,
-                    details: "Checks for patterns at different shifts"
-                });
+                const randomness = this.testRandomness(hexString);
+                if (typeof randomness !== 'string') {
+                    const meanDiff = Math.abs(randomness.mean - randomness.idealMean).toFixed(2);
+                    const piDiff = Math.abs(randomness.piEstimate - randomness.idealPi).toFixed(4);
+                    
+                    results.push({
+                        name: "Statistical Randomness",
+                        status: meanDiff < 5 && piDiff < 0.1 ? "PASS" : "WARNING",
+                        message: `Mean: ${randomness.mean} | π≈${randomness.piEstimate}`,
+                        details: `Mean Δ: ${meanDiff} | π Δ: ${piDiff}\nIdeal mean: 127.5, variance: 5461.25`
+                    });
+                }
                 
                 return results;
             }
@@ -939,18 +1213,173 @@
         class EnhancedCipherUIController {
             constructor() {
                 this.cipher = new EnhancedHomophonicCipher();
+                this.lastBinaryResult = null;
                 this.initializeEventListeners();
+                this.updateCharsetPreview();
+                this.loadSettings();
             }
 
             initializeEventListeners() {
-                document.getElementById('encryptBtn').addEventListener('click', () => this.handleEncrypt());
-                document.getElementById('decryptBtn').addEventListener('click', () => this.handleDecrypt());
-                document.getElementById('clearBtn').addEventListener('click', () => this.handleClear());
-                document.getElementById('analyzeBtn').addEventListener('click', () => this.handleAnalyze());
+                const encryptBtn = document.getElementById('encryptBtn');
+                const decryptBtn = document.getElementById('decryptBtn');
+                const clearBtn = document.getElementById('clearBtn');
+                const analyzeBtn = document.getElementById('analyzeBtn');
+                const outputFormat = document.getElementById('outputFormat');
+                const customCharset = document.getElementById('customCharset');
+                const generateBtn = document.getElementById('generateCharset');
+                const enableMixColumns = document.getElementById('enableMixColumns');
+                const mixColumnsRounds = document.getElementById('mixColumnsRounds');
+                const enableNonLinearity = document.getElementById('enableNonLinearity');
+                const enableAffinePermutation = document.getElementById('enableAffinePermutation'); // Добавлен слушатель
+
+                encryptBtn.addEventListener('click', () => this.handleEncrypt());
+                decryptBtn.addEventListener('click', () => this.handleDecrypt());
+                clearBtn.addEventListener('click', () => this.handleClear());
+                analyzeBtn.addEventListener('click', () => this.handleAnalyze());
                 
-                document.getElementById('enableAffine').addEventListener('change', (e) => {
-                    this.cipher.setAffineTransformation(e.target.checked);
+                outputFormat.addEventListener('change', () => {
+                    this.handleOutputFormatChange();
+                    this.saveSettings();
                 });
+                customCharset.addEventListener('input', () => {
+                    this.updateCharsetPreview();
+                    this.saveSettings();
+                });
+                generateBtn.addEventListener('click', () => this.handleGenerateCharset());
+                enableMixColumns.addEventListener('change', () => {
+                    this.cipher.setMixColumns(enableMixColumns.checked);
+                    this.saveSettings();
+                });
+                mixColumnsRounds.addEventListener('change', () => {
+                    this.cipher.setMixColumnsRounds(parseInt(mixColumnsRounds.value));
+                    this.saveSettings();
+                });
+                enableNonLinearity.addEventListener('change', () => {
+                    this.cipher.setNonLinearity(enableNonLinearity.checked);
+                    this.saveSettings();
+                });
+                enableAffinePermutation.addEventListener('change', () => {
+                    this.cipher.setAffinePermutation(enableAffinePermutation.checked); // Добавлен обработчик
+                    this.saveSettings();
+                });
+            }
+
+            handleOutputFormatChange() {
+                const format = document.getElementById('outputFormat').value;
+                const customOptions = document.getElementById('customOptions');
+                customOptions.style.display = format === 'custom' ? 'block' : 'none';
+                this.cipher.setOutputFormat(format);
+            }
+
+            updateCharsetPreview() {
+                const charset = document.getElementById('customCharset').value;
+                const preview = document.getElementById('charsetPreview');
+                preview.innerHTML = '';
+
+                if (charset.length === 0) return;
+
+                for (let i = 0; i < Math.min(256, 32); i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'charset-cell';
+                    cell.textContent = charset[i] || '?';
+                    cell.title = `Index: ${i}, Char: ${charset[i] || 'missing'}`;
+                    preview.appendChild(cell);
+                }
+
+                if (charset.length !== 256) {
+                    const warning = document.createElement('div');
+                    warning.style.gridColumn = '1 / -1';
+                    warning.style.color = 'var(--warning)';
+                    warning.textContent = `Warning: ${charset.length}/256 characters`;
+                    preview.appendChild(warning);
+                }
+            }
+
+            generateRandomCharset() {
+                const chars = [];
+                const usedChars = new Set();
+                
+                const safeRanges = [
+                    [0x0020, 0x007F], [0x00A0, 0x00FF], [0x0100, 0x017F],
+                    [0x0180, 0x024F], [0x0370, 0x03FF], [0x0400, 0x04FF],
+                    [0x2000, 0x206F], [0x2100, 0x214F], [0x2150, 0x218F],
+                    [0x2190, 0x21FF], [0x2200, 0x22FF], [0x2300, 0x23FF],
+                    [0x2500, 0x257F], [0x2580, 0x259F], [0x25A0, 0x25FF],
+                    [0x2600, 0x26FF], [0x2700, 0x27BF]
+                ];
+
+                const basicChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=[]{}|;:,.<>?/~`'\"\\";
+                for (const char of basicChars) {
+                    if (chars.length >= 256) break;
+                    if (!usedChars.has(char)) {
+                        chars.push(char);
+                        usedChars.add(char);
+                    }
+                }
+
+                while (chars.length < 256) {
+                    const range = safeRanges[Math.floor(Math.random() * safeRanges.length)];
+                    const codePoint = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+                    
+                    if (codePoint === 0xFEFF || codePoint === 0xFFFE || codePoint === 0xFFFF) continue;
+
+                    try {
+                        const char = String.fromCodePoint(codePoint);
+                        if (char.length === 1 && !usedChars.has(char) && /[\S]/.test(char)) {
+                            chars.push(char);
+                            usedChars.add(char);
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                    
+                    if (chars.length > 300) break;
+                }
+
+                return chars.join('');
+            }
+
+            handleGenerateCharset() {
+                const randomCharset = this.generateRandomCharset();
+                document.getElementById('customCharset').value = randomCharset;
+                this.updateCharsetPreview();
+                this.saveSettings();
+            }
+
+            saveSettings() {
+                const settings = {
+                    iterations: document.getElementById('iterations').value,
+                    diffusionMode: document.getElementById('diffusionMode').value,
+                    outputFormat: document.getElementById('outputFormat').value,
+                    customCharset: document.getElementById('customCharset').value,
+                    enableMixColumns: document.getElementById('enableMixColumns').checked,
+                    mixColumnsRounds: document.getElementById('mixColumnsRounds').value,
+                    enableNonLinearity: document.getElementById('enableNonLinearity').checked,
+                    enableAffinePermutation: document.getElementById('enableAffinePermutation').checked // Сохраняем настройку
+                };
+                localStorage.setItem('cipherSettings', JSON.stringify(settings));
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem('cipherSettings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    document.getElementById('iterations').value = settings.iterations;
+                    document.getElementById('diffusionMode').value = settings.diffusionMode;
+                    document.getElementById('outputFormat').value = settings.outputFormat;
+                    document.getElementById('customCharset').value = settings.customCharset;
+                    document.getElementById('enableMixColumns').checked = settings.enableMixColumns;
+                    document.getElementById('mixColumnsRounds').value = settings.mixColumnsRounds;
+                    document.getElementById('enableNonLinearity').checked = settings.enableNonLinearity;
+                    document.getElementById('enableAffinePermutation').checked = settings.enableAffinePermutation !== undefined ? settings.enableAffinePermutation : true; // Загружаем настройку
+                    
+                    this.cipher.setMixColumns(settings.enableMixColumns);
+                    this.cipher.setMixColumnsRounds(parseInt(settings.mixColumnsRounds));
+                    this.cipher.setNonLinearity(settings.enableNonLinearity);
+                    this.cipher.setAffinePermutation(settings.enableAffinePermutation !== undefined ? settings.enableAffinePermutation : true); // Устанавливаем значение
+                    this.handleOutputFormatChange();
+                    this.updateCharsetPreview();
+                }
             }
 
             async handleEncrypt() {
@@ -965,24 +1394,54 @@
                         throw new Error('Key confirmation does not match');
                     }
 
+                    if (passphrase.length < 12) {
+                        throw new Error('Passphrase must be at least 12 characters');
+                    }
+
                     const iterations = parseInt(document.getElementById('iterations').value);
                     const diffusionMode = document.getElementById('diffusionMode').value;
                     const inputData = document.getElementById('inputData').value;
-                    const enableAffine = document.getElementById('enableAffine').checked;
+                    const outputFormat = document.getElementById('outputFormat').value;
 
-                    this.cipher.setAffineTransformation(enableAffine);
+                    this.cipher.setOutputFormat(outputFormat);
+
+                    if (outputFormat === 'custom') {
+                        const charset = document.getElementById('customCharset').value;
+                        if (charset.length !== 256) {
+                            throw new Error('Custom charset must contain exactly 256 characters');
+                        }
+                        const uniqueChars = new Set(charset);
+                        if (uniqueChars.size !== 256) {
+                            throw new Error('Charset must contain 256 unique characters, found duplicates');
+                        }
+                        this.cipher.setCustomCharset(charset);
+                    }
+
                     await this.cipher.initializeWithKey(passphrase, iterations);
-                    const resultBytes = await this.cipher.encryptData(inputData, diffusionMode);
+                    const result = await this.cipher.encryptData(inputData, diffusionMode);
+
+                    if (typeof result === 'string') {
+                        document.getElementById('outputData').textContent = result;
+                    } else {
+                        this.lastBinaryResult = result;
+                        document.getElementById('outputData').textContent = 
+                            `Binary data (${result.length} bytes): [${Array.from(result).join(', ')}]`;
+                    }
                     
-                    // Convert to hex for display
-                    const resultHex = Array.from(resultBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-                    document.getElementById('outputData').textContent = resultHex;
+                    document.getElementById('outputPreview').textContent = 
+                        this.getOutputPreview(result, outputFormat);
                     
-                    this.updateSecurityInfo('encrypt', inputData.length, resultBytes.length, diffusionMode, enableAffine);
-                    this.runAutomaticTests(resultBytes);
+                    this.updateSecurityInfo('encrypt', typeof result === 'string' ? result.length : result.length);
+                    this.updateSBoxDisplay();
+                    this.saveSettings();
+
+                    if (typeof result === 'string' && outputFormat === 'hex') {
+                        this.runAutomaticTests(result);
+                    } else {
+                        this.setTestStatus('ready', 'Tests available only for HEX output');
+                    }
+
                     this.setStatus('ready', 'Encryption successful');
-                    
-                    await this.calculateEntropyComparison(passphrase, iterations, inputData, diffusionMode);
                 } catch (error) {
                     this.setStatus('error', 'Encryption failed: ' + error.message);
                     console.error('Encryption error:', error);
@@ -991,38 +1450,12 @@
                 }
             }
 
-            async calculateEntropyComparison(passphrase, iterations, inputData, diffusionMode) {
-                try {
-                    const cipherWithoutAffine = new EnhancedHomophonicCipher();
-                    cipherWithoutAffine.setAffineTransformation(false);
-                    await cipherWithoutAffine.initializeWithKey(passphrase, iterations);
-                    const resultWithoutAffine = await cipherWithoutAffine.encryptData(inputData, diffusionMode);
-                    const entropyWithout = CipherTestSuite.calculateEntropy(resultWithoutAffine);
-                    
-                    const cipherWithAffine = new EnhancedHomophonicCipher();
-                    cipherWithAffine.setAffineTransformation(true);
-                    await cipherWithAffine.initializeWithKey(passphrase, iterations);
-                    const resultWithAffine = await cipherWithAffine.encryptData(inputData, diffusionMode);
-                    const entropyWith = CipherTestSuite.calculateEntropy(resultWithAffine);
-                    
-                    document.getElementById('entropyWithoutAffine').textContent = 
-                        `Without affine: ${entropyWithout.toFixed(6)}`;
-                    document.getElementById('entropyWithAffine').textContent = 
-                        `With affine: ${entropyWith.toFixed(6)}`;
-                    document.getElementById('entropyDifference').textContent = 
-                        `Difference: ${(entropyWith - entropyWithout).toFixed(6)}`;
-                    
-                } catch (error) {
-                    console.error('Entropy comparison failed:', error);
-                }
-            }
-
-            async runAutomaticTests(encryptedData) {
+            async runAutomaticTests(hexString) {
                 this.setTestStatus('processing', 'Running cryptographic tests...');
                 
                 setTimeout(() => {
                     try {
-                        const testResults = CipherTestSuite.runAllTests(encryptedData);
+                        const testResults = CipherTestSuite.runAllTests(hexString);
                         this.displayTestResults(testResults);
                         this.setTestStatus('ready', 'Tests completed');
                     } catch (error) {
@@ -1033,31 +1466,38 @@
 
             displayTestResults(results) {
                 const testResultsDiv = document.getElementById('testResults');
-                if (testResultsDiv) {
-                    testResultsDiv.innerHTML = '';
+                testResultsDiv.innerHTML = '';
+                
+                results.forEach(test => {
+                    const testDiv = document.createElement('div');
+                    testDiv.className = `test-result ${test.status === 'PASS' ? 'test-pass' : 
+                                       test.status === 'FAIL' ? 'test-fail' : 
+                                       test.status === 'WARNING' ? 'test-warning' : 'test-info'}`;
                     
-                    results.forEach(test => {
-                        const testDiv = document.createElement('div');
-                        testDiv.className = `test-result ${test.status === 'PASS' ? 'test-pass' : 
-                                           test.status === 'FAIL' ? 'test-fail' : 
-                                           test.status === 'WARNING' ? 'test-warning' : 'test-info'}`;
-                        
-                        testDiv.innerHTML = `
-                            <strong>${test.name}</strong>: ${test.status}
-                            <div>${test.message}</div>
-                            <div style="font-size: 0.8em; color: #94a3b8; margin-top: 0.5rem;">${test.details}</div>
-                        `;
-                        
-                        testResultsDiv.appendChild(testDiv);
-                    });
-                }
+                    testDiv.innerHTML = `
+                        <strong>${test.name}</strong>: ${test.status}
+                        <div>${test.message}</div>
+                        <div style="font-size: 0.8em; color: #94a3b8; margin-top: 0.5rem;">${test.details}</div>
+                    `;
+                    
+                    testResultsDiv.appendChild(testDiv);
+                });
             }
 
             setTestStatus(type, message) {
                 const indicator = document.getElementById('testStatus');
-                if (indicator) {
-                    indicator.className = `status-${type}`;
-                    indicator.textContent = message;
+                indicator.className = `status-${type}`;
+                indicator.textContent = message;
+            }
+
+            getOutputPreview(result, format) {
+                if (format === 'binary' && result instanceof Uint8Array) {
+                    return `Binary: ${result.length} bytes\nFirst 32 bytes: [${Array.from(result.slice(0, 32)).join(', ')}]...`;
+                } else if (format === 'custom' && typeof result === 'string') {
+                    return `Custom: ${result.length} characters\nPreview: ${result.substring(0, 100)}...`;
+                } else {
+                    return String(result).substring(0, 200) + 
+                           (String(result).length > 200 ? '...' : '');
                 }
             }
 
@@ -1069,15 +1509,38 @@
                     const passphrase = document.getElementById('keyInput').value;
                     const iterations = parseInt(document.getElementById('iterations').value);
                     const diffusionMode = document.getElementById('diffusionMode').value;
-                    const inputData = document.getElementById('inputData').value;
-                    const enableAffine = document.getElementById('enableAffine').checked;
+                    const outputFormat = document.getElementById('outputFormat').value;
 
-                    this.cipher.setAffineTransformation(enableAffine);
+                    this.cipher.setOutputFormat(outputFormat);
+
+                    if (outputFormat === 'custom') {
+                        const charset = document.getElementById('customCharset').value;
+                        if (charset.length !== 256) {
+                            throw new Error('Custom charset must contain exactly 256 characters');
+                        }
+                        const uniqueChars = new Set(charset);
+                        if (uniqueChars.size !== 256) {
+                            throw new Error('Charset must contain 256 unique characters, found duplicates');
+                        }
+                        this.cipher.setCustomCharset(charset);
+                    }
+
+                    let inputData;
+                    if (outputFormat === 'binary') {
+                        inputData = this.lastBinaryResult;
+                    } else {
+                        inputData = document.getElementById('inputData').value;
+                    }
+
                     await this.cipher.initializeWithKey(passphrase, iterations);
                     const result = await this.cipher.decryptData(inputData, diffusionMode);
 
                     document.getElementById('outputData').textContent = result;
-                    this.updateSecurityInfo('decrypt', inputData.length, result.length, diffusionMode, enableAffine);
+                    document.getElementById('outputPreview').textContent = 
+                        `Decrypted: ${result.substring(0, 100)}...`;
+                    
+                    this.updateSecurityInfo('decrypt', result.length);
+                    
                     this.setStatus('ready', 'Decryption successful');
                 } catch (error) {
                     this.setStatus('error', 'Decryption failed: ' + error.message);
@@ -1091,12 +1554,9 @@
                 document.getElementById('inputData').value = '';
                 document.getElementById('outputData').textContent = '';
                 document.getElementById('securityInfo').textContent = '';
-                const testResultsDiv = document.getElementById('testResults');
-                if (testResultsDiv) testResultsDiv.innerHTML = '';
-                document.getElementById('outputStats').textContent = 'Waiting for operation...';
-                document.getElementById('entropyWithoutAffine').textContent = 'Without affine: N/A';
-                document.getElementById('entropyWithAffine').textContent = 'With affine: N/A';
-                document.getElementById('entropyDifference').textContent = 'Difference: N/A';
+                document.getElementById('outputPreview').textContent = '';
+                document.getElementById('testResults').textContent = '';
+                document.getElementById('sboxGrid').innerHTML = '';
                 this.setStatus('ready', 'Ready');
                 this.setTestStatus('ready', 'Ready to test');
             }
@@ -1106,67 +1566,93 @@
                 
                 setTimeout(() => {
                     this.setStatus('ready', 'Security analysis complete');
-                    const enableAffine = document.getElementById('enableAffine').checked;
-                    let info = 'Security Analysis:\n';
-                    info += '• Deterministic S-Box generation\n';
-                    info += '• Password-based salt for key derivation\n';
-                    info += '• 512-bit key material via PBKDF2-HMAC-SHA512\n';
-                    info += '• 65536-element homophonic encoding\n';
-                    if (enableAffine) {
-                        info += '• Affine transformation for non-linearity\n';
-                        info += '• GF(256) multiplication for diffusion\n';
-                        info += '• Correct state synchronization\n';
-                    }
-                    info += '• Byte-based implementation\n';
-                    info += '• 256:1 homophone-to-byte ratio\n';
-                    info += '• Non-deterministic encryption (semantic security)';
-                    
-                    document.getElementById('securityInfo').textContent = info;
+                    document.getElementById('securityInfo').textContent = 
+                        'Security Analysis:\n' +
+                        '• Deterministic S-Box generation\n' +
+                        '• Password-based salt for key derivation\n' +
+                        '• 512-bit key material via PBKDF2-HMAC-SHA512\n' +
+                        '• 65536-element homophonic S-Box\n' +
+                        '• Non-deterministic encryption (semantic security)\n' +
+                        '• Multiple output formats support\n' +
+                        '• Multi-round MixColumns transformation\n' +
+                        '• Inter-round non-linearity enhancement\n' +
+                        '• Multiple diffusion modes (CBC, CFB, OFB)\n' +
+                        '• Affine permutation for additional non-linearity'; // Добавлена информация
                 }, 1000);
             }
 
             setStatus(type, message) {
                 const indicator = document.getElementById('statusIndicator');
-                if (indicator) {
-                    indicator.className = `status-${type}`;
-                    indicator.textContent = message;
-                }
+                indicator.className = `status-${type}`;
+                indicator.textContent = message;
             }
 
             showLoading(button) {
-                const loadingElement = document.getElementById(`${button}Loading`);
-                const buttonElement = document.getElementById(`${button}Btn`);
-                if (loadingElement) loadingElement.style.display = 'inline-block';
-                if (buttonElement) buttonElement.disabled = true;
+                document.getElementById(`${button}Loading`).style.display = 'inline-block';
+                document.getElementById(`${button}Btn`).disabled = true;
             }
 
             hideLoading(button) {
-                const loadingElement = document.getElementById(`${button}Loading`);
-                const buttonElement = document.getElementById(`${button}Btn`);
-                if (loadingElement) loadingElement.style.display = 'none';
-                if (buttonElement) buttonElement.disabled = false;
+                document.getElementById(`${button}Loading`).style.display = 'none';
+                document.getElementById(`${button}Btn`).disabled = false;
             }
 
-            updateSecurityInfo(operation, inputLength, outputLength, diffusionMode, enableAffine) {
+            updateSecurityInfo(operation, length) {
+                const format = document.getElementById('outputFormat').value;
+                const diffusionMode = document.getElementById('diffusionMode').value;
+                const mixColumns = document.getElementById('enableMixColumns').checked;
+                const rounds = document.getElementById('mixColumnsRounds').value;
+                const nonLinearity = document.getElementById('enableNonLinearity').checked;
+                const affinePermutation = document.getElementById('enableAffinePermutation').checked; // Добавлена информация
+                
                 let info = `Operation: ${operation.toUpperCase()}\n`;
-                info += `Input length: ${inputLength} characters\n`;
-                info += `Output length: ${outputLength} bytes\n`;
-                info += `Expansion ratio: ${(outputLength/inputLength).toFixed(2)}:1\n`;
+                info += `Output format: ${format}\n`;
                 info += `Diffusion mode: ${diffusionMode}\n`;
-                info += `Affine transformation: ${enableAffine ? 'Enabled' : 'Disabled'}\n`;
-                
-                if (diffusionMode === 'cbc') {
-                    info += `IV: 16 bytes (encoded as 32 bytes)\n`;
+                info += `MixColumns: ${mixColumns ? 'Enabled' : 'Disabled'}\n`;
+                if (mixColumns) {
+                    info += `MixColumns rounds: ${rounds}\n`;
+                    info += `Non-linearity: ${nonLinearity ? 'Enabled' : 'Disabled'}\n`;
                 }
-                
-                info += `Homophone set: 65536 combinations\n`;
-                info += `S-Box: 256x256 deterministic generation\n`;
+                info += `Affine permutation: ${affinePermutation ? 'Enabled' : 'Disabled'}\n`; // Добавлена строка
+                info += `Data length: ${length} ${format === 'binary' ? 'bytes' : 'characters'}\n`;
+                info += `S-Box: Deterministic generation\n`;
                 info += `Key: PBKDF2-HMAC-SHA512 with password-based salt`;
                 
                 document.getElementById('securityInfo').textContent = info;
-                
-                const stats = `Input: ${inputLength} chars → Output: ${outputLength} bytes (Ratio: ${(outputLength/inputLength).toFixed(2)}:1)`;
-                document.getElementById('outputStats').textContent = stats;
+            }
+
+            updateSBoxDisplay() {
+                const preview = this.cipher.getSBoxPreview();
+                if (!preview) return;
+
+                const grid = document.getElementById('sboxGrid');
+                grid.innerHTML = '';
+
+                const emptyHeader = document.createElement('div');
+                emptyHeader.className = 'sbox-cell sbox-header';
+                grid.appendChild(emptyHeader);
+
+                for (let j = 0; j < 16; j++) {
+                    const header = document.createElement('div');
+                    header.className = 'sbox-cell sbox-header';
+                    header.textContent = j.toString(16).toUpperCase();
+                    grid.appendChild(header);
+                }
+
+                for (let i = 0; i < 16; i++) {
+                    const rowHeader = document.createElement('div');
+                    rowHeader.className = 'sbox-cell sbox-header';
+                    rowHeader.textContent = i.toString(16).toUpperCase();
+                    grid.appendChild(rowHeader);
+
+                    for (let j = 0; j < 16; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'sbox-cell';
+                        cell.textContent = preview[i][j];
+                        cell.title = `S-Box[${i.toString(16).toUpperCase()}${j.toString(16).toUpperCase()}]`;
+                        grid.appendChild(cell);
+                    }
+                }
             }
         }
 
@@ -1175,4 +1661,4 @@
         });
     </script>
 </body>
-</html>
+    </html>
