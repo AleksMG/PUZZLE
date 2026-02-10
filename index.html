@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Professional 10-Rotor Machine</title>
+  <title>PUZZLE | Correct Rotor Logic</title>
   <style>
     :root {
       --bg: #0f0f13;
@@ -126,11 +126,16 @@
       margin: 4px 0;
       font-family: monospace;
     }
+    .steps-line {
+      margin: 2px 0;
+      font-family: monospace;
+      color: #4da6ff;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>⚙️ Professional 10-Rotor Machine</h1>
+    <h1>⚙️ PUZZLE | Correct Rotor Logic</h1>
 
     <div class="card">
       <label for="alphabet">Alphabet (uppercase, no duplicates)</label>
@@ -150,7 +155,7 @@
 
     <div class="card">
       <label for="plaintext">Plaintext</label>
-      <textarea id="plaintext" spellcheck="false" autocomplete="off">HELLO</textarea>
+      <textarea id="plaintext" spellcheck="false" autocomplete="off">AAAAAAAAAAAAAAAAAAAAAAAAAA</textarea>
       
       <div class="btn-group">
         <button id="encryptBtn">🔒 Encrypt</button>
@@ -168,7 +173,7 @@
       <label>Analysis</label>
       <div class="stats">
         <div class="stat-box">Length: <span id="len">0</span></div>
-        <div class="stat-box">Entropy: <span id="entropy">0.00</span></div>
+        <div class="stat-box">Entropy: <span id="entropy">0.0000</span></div>
         <div class="stat-box">HEX: <span id="hex">—</span></div>
         <div class="stat-box">Base64: <span id="base64">—</span></div>
       </div>
@@ -178,7 +183,7 @@
   </div>
 
   <script>
-    class ProfessionalRotorMachine {
+    class CorrectRotorMachine {
       constructor(alphabetStr) {
         this.alphabet = alphabetStr.toUpperCase().split('');
         if (new Set(this.alphabet).size !== this.alphabet.length) {
@@ -199,59 +204,74 @@
         }
       }
 
-      // Генерация одного ротора как полной перестановки
-      buildRotorFromSubkey(subkey) {
-        const keyIndices = subkey.map(c => this.charToIndex.get(c));
-        if (keyIndices.some(v => v === undefined)) {
-          throw new Error("Invalid subkey");
-        }
-        // Создаём массив [0,1,2,...,N-1]
-        let rotor = Array.from({length: this.N}, (_, i) => i);
-        // Перемешиваем детерминированно на основе subkey
-        let seed = 0;
-        for (let c of keyIndices) {
-          seed = (seed * 31 + c) & 0x7FFFFFFF;
-        }
-        // Fisher-Yates shuffle
-        for (let i = this.N - 1; i > 0; i--) {
-          seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
-          const j = Math.floor((seed / 0x80000000) * (i + 1));
-          [rotor[i], rotor[j]] = [rotor[j], rotor[i]];
-        }
-        return rotor;
-      }
-
-      // Генерация 10 роторов
-      buildRotors(key) {
+      buildRotorsAndSteps(key) {
         const keyArr = Array.from(key);
         const rotors = [];
+        const steps = [];
+        
         for (let r = 0; r < 10; r++) {
-          // Уникальный подключ для каждого ротора
           const subkey = [];
           for (let i = 0; i < keyArr.length || i < 5; i++) {
             subkey.push(keyArr[(r * 7 + i) % keyArr.length]);
           }
-          rotors.push(this.buildRotorFromSubkey(subkey));
+          
+          let seed = 0;
+          for (let c of subkey.map(ch => this.charToIndex.get(ch))) {
+            seed = (seed * 31 + c) & 0x7FFFFFFF;
+          }
+          
+          let rotor = Array.from({length: this.N}, (_, i) => i);
+          for (let i = this.N - 1; i > 0; i--) {
+            seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
+            const j = Math.floor((seed / 0x80000000) * (i + 1));
+            [rotor[i], rotor[j]] = [rotor[j], rotor[i]];
+          }
+          rotors.push(rotor);
+          
+          // Шаги: только нечётные (взаимно простые с 26)
+          const candidates = [1,3,5,7,9,11,15,17,19,21,23,25];
+          const step = candidates[seed % candidates.length];
+          steps.push(step);
         }
-        return rotors;
+        
+        return { rotors, steps };
       }
 
-      // Прямой проход через ротор с поворотом
-      forwardThroughRotor(input, rotor, ringOffset) {
-        // Вход с учётом поворота ротора
-        const rotatedInput = (input + ringOffset) % this.N;
+      forward(input, rotor, offset) {
+        const rotatedInput = (input + offset) % this.N;
         const output = rotor[rotatedInput];
-        // Выход без обратного поворота (как в Enigma)
-        return output;
+        return (output - offset + this.N) % this.N;
       }
 
-      // Обратный проход через ротор
-      backwardThroughRotor(input, rotor, ringOffset) {
-        // Найти, какой вход даёт такой выход
-        const rotatedOutput = input;
+      backward(output, rotor, offset) {
+        const rotatedOutput = (output + offset) % this.N;
         const inputPos = rotor.indexOf(rotatedOutput);
-        // Учесть поворот при возврате
-        return (inputPos - ringOffset + this.N) % this.N;
+        return (inputPos - offset + this.N) % this.N;
+      }
+
+      // Генерация параметров для нелинейного вращения
+      getKeyParams(key) {
+        const keyIndices = Array.from(key).map(c => this.charToIndex.get(c));
+        const params = [];
+        for (let i = 0; i < 10; i++) {
+          let sum = 0;
+          for (let j = 0; j < keyIndices.length; j++) {
+            sum = (sum + keyIndices[j] * (i + j + 1)) & 0x7FFFFFFF;
+          }
+          params.push(sum % this.N);
+        }
+        return params;
+      }
+
+      // Обновление позиций роторов (НЕЛИНЕЙНОЕ)
+      updatePositions(positions, keyParams, steps, position) {
+        const count = (keyParams[0] + position) % 10 + 1; // 1-10 роторов
+        const start = (keyParams[1] + position) % 10;
+        
+        for (let i = 0; i < count; i++) {
+          const rotorIndex = (start + i) % 10;
+          positions[rotorIndex] = (positions[rotorIndex] + steps[rotorIndex]) % this.N;
+        }
       }
 
       encrypt(plaintext, key) {
@@ -260,34 +280,23 @@
         this.validateText(plaintext);
         this.validateText(key);
 
-        const rotors = this.buildRotors(key);
+        const { rotors, steps } = this.buildRotorsAndSteps(key);
+        const keyParams = this.getKeyParams(key);
+        let positions = new Array(10).fill(0); // НАЧАЛЬНОЕ СОСТОЯНИЕ
         let ciphertext = '';
 
-        // Начальные позиции роторов (все 0)
-        let ringOffsets = new Array(10).fill(0);
-
         for (let pos = 0; pos < plaintext.length; pos++) {
-          // Шаг роторов: первый всегда шагает, остальные — по условию
-          ringOffsets[0] = (ringOffsets[0] + 1) % this.N;
-          for (let r = 0; r < 9; r++) {
-            if (ringOffsets[r] === 0) { // если сделал оборот
-              ringOffsets[r + 1] = (ringOffsets[r + 1] + 1) % this.N;
-            } else {
-              break;
-            }
-          }
-
+          // ШИФРУЕМ с текущим состоянием
           let signal = this.charToIndex.get(plaintext[pos]);
-
-          // Проход ВПЕРЁД через все 10 роторов
           for (let r = 0; r < 10; r++) {
-            signal = this.forwardThroughRotor(signal, rotors[r], ringOffsets[r]);
+            signal = this.forward(signal, rotors[r], positions[r]);
           }
-
           ciphertext += this.alphabet[signal];
+          
+          // ОБНОВЛЯЕМ состояние ПОСЛЕ шифрования
+          this.updatePositions(positions, keyParams, steps, pos);
         }
 
-        this.lastRotors = rotors;
         return ciphertext;
       }
 
@@ -300,29 +309,21 @@
         }
         this.validateText(key);
 
-        const rotors = this.buildRotors(key);
+        const { rotors, steps } = this.buildRotorsAndSteps(key);
+        const keyParams = this.getKeyParams(key);
+        let positions = new Array(10).fill(0); // ТО ЖЕ НАЧАЛЬНОЕ СОСТОЯНИЕ!
         let plaintext = '';
 
-        let ringOffsets = new Array(10).fill(0);
-
         for (let pos = 0; pos < ciphertext.length; pos++) {
-          ringOffsets[0] = (ringOffsets[0] + 1) % this.N;
-          for (let r = 0; r < 9; r++) {
-            if (ringOffsets[r] === 0) {
-              ringOffsets[r + 1] = (ringOffsets[r + 1] + 1) % this.N;
-            } else {
-              break;
-            }
-          }
-
+          // ДЕШИФРУЕМ с тем же состоянием, что было при шифровании
           let signal = this.charToIndex.get(ciphertext[pos]);
-
-          // Проход НАЗАД через роторы (в обратном порядке)
           for (let r = 9; r >= 0; r--) {
-            signal = this.backwardThroughRotor(signal, rotors[r], ringOffsets[r]);
+            signal = this.backward(signal, rotors[r], positions[r]);
           }
-
           plaintext += this.alphabet[signal];
+          
+          // ОБНОВЛЯЕМ состояние ПОСЛЕ дешифрования (точно так же!)
+          this.updatePositions(positions, keyParams, steps, pos);
         }
 
         return plaintext;
@@ -392,17 +393,18 @@
       const alphabet = alphabetInput.value;
       const key = keyInput.value;
       if (!alphabet || !key) {
-        rotorParams.innerHTML = 'Enter key to see all 10 rotors';
+        rotorParams.innerHTML = 'Enter key to see rotors and steps';
         return;
       }
 
       try {
-        const machine = new ProfessionalRotorMachine(alphabet);
-        const rotors = machine.buildRotors(key);
+        const machine = new CorrectRotorMachine(alphabet);
+        const { rotors, steps } = machine.buildRotorsAndSteps(key);
         let html = '';
         for (let i = 0; i < 10; i++) {
           const preview = rotors[i].map(idx => machine.alphabet[idx]).join('');
           html += `<div class="rotor-line"><strong>Rotor ${i}:</strong> ${preview}</div>`;
+          html += `<div class="steps-line">Step ${i}: +${steps[i]}</div>`;
         }
         rotorParams.innerHTML = html;
       } catch (e) {
@@ -413,16 +415,16 @@
     function updateAnalysis(text) {
       if (!text) {
         lenEl.textContent = '0';
-        entropyEl.textContent = '0.00';
+        entropyEl.textContent = '0.0000';
         hexEl.textContent = '—';
         base64El.textContent = '—';
         return;
       }
 
       try {
-        const cipher = new ProfessionalRotorMachine(alphabetInput.value);
+        const cipher = new CorrectRotorMachine(alphabetInput.value);
         lenEl.textContent = text.length;
-        entropyEl.textContent = cipher.shannonEntropy(text).toFixed(2);
+        entropyEl.textContent = cipher.shannonEntropy(text).toFixed(4);
         hexEl.textContent = cipher.toHex(text);
         base64El.textContent = cipher.toBase64(text);
       } catch (e) {
@@ -433,7 +435,7 @@
 
     function encryptAction() {
       try {
-        const cipher = new ProfessionalRotorMachine(alphabetInput.value);
+        const cipher = new CorrectRotorMachine(alphabetInput.value);
         const result = cipher.encrypt(plaintextInput.value, keyInput.value);
         ciphertextOutput.textContent = result;
         updateAnalysis(result);
@@ -446,7 +448,7 @@
 
     function decryptAction() {
       try {
-        const cipher = new ProfessionalRotorMachine(alphabetInput.value);
+        const cipher = new CorrectRotorMachine(alphabetInput.value);
         const result = cipher.decrypt(plaintextInput.value, keyInput.value);
         ciphertextOutput.textContent = result;
         updateAnalysis(result);
