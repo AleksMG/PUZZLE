@@ -226,14 +226,14 @@
   <div class="container">
     <div class="header">
       <h1><i class="fas fa-lock"></i> CipherOS Rotor Machine</h1>
-      <p class="subtitle">Military-grade 10-rotor cipher with nonlinear avalanche diffusion.</p>
+      <p class="subtitle">Preserves non-alphabet characters. Fully nonlinear rotor diffusion.</p>
     </div>
 
     <!-- Configuration -->
     <div class="card">
       <div class="grid-2">
         <div>
-          <label for="alphabet">Alphabet (unique uppercase letters)</label>
+          <label for="alphabet">Alphabet (any unique characters)</label>
           <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" spellcheck="false">
         </div>
         <div>
@@ -303,29 +303,28 @@
 
   <script>
     // ==============================
-    // ИСПРАВЛЕННАЯ КРИПТОСИСТЕМА С НЕЛИНЕЙНОЙ АВАЛАНЧЕЙ
+    // ИСПРАВЛЕННАЯ КРИПТОСИСТЕМА: СОХРАНЕНИЕ НЕАЛФАВИТНЫХ СИМВОЛОВ
     // ==============================
 
     class RotorMachine {
       constructor(alphabet) {
-        const clean = alphabet.toUpperCase().replace(/[^A-Z]/g, '');
-        const unique = [...new Set(clean)].join('');
-        if (unique.length < 2) throw new Error("Alphabet too short");
+        if (!alphabet || alphabet.length === 0) {
+          throw new Error("Alphabet cannot be empty");
+        }
+        const unique = [...new Set(alphabet.split(''))].join('');
         this.alphabet = unique.split('');
         this.N = this.alphabet.length;
+        if (this.N < 2) throw new Error("Alphabet too short");
+        
         this.charToIndex = new Map();
         this.alphabet.forEach((ch, i) => this.charToIndex.set(ch, i));
       }
 
-      filter(text) {
-        return text.toUpperCase().split('').filter(c => this.charToIndex.has(c)).join('');
-      }
-
       buildRotorsAndSteps(key) {
-        const keyClean = this.filter(key);
+        const keyClean = key.split('').filter(c => this.charToIndex.has(c)).join('');
         if (!keyClean) throw new Error("Key has no valid characters");
+        
         const rotors = [], steps = [];
-
         for (let r = 0; r < 10; r++) {
           let seed = r;
           for (let i = 0; i < Math.max(5, keyClean.length); i++) {
@@ -340,13 +339,13 @@
             [rotor[i], rotor[j]] = [rotor[j], rotor[i]];
           }
           rotors.push(rotor);
-          steps.push((seed % 101) - 50);
+          steps.push((seed % (2 * this.N + 1)) - this.N);
         }
         return { rotors, steps };
       }
 
       getKeyParams(key) {
-        const keyClean = this.filter(key);
+        const keyClean = key.split('').filter(c => this.charToIndex.has(c)).join('');
         const indices = keyClean.split('').map(c => this.charToIndex.get(c));
         const params = [];
         for (let i = 0; i < 10; i++) {
@@ -359,7 +358,6 @@
         return params;
       }
 
-      // ПОЗИЦИОННОЕ ОБНОВЛЕНИЕ (без диффузии)
       updatePositions(positions, keyParams, steps, position) {
         const count = (keyParams[0] + position) % 10 + 1;
         const start = (keyParams[1] + position) % 10;
@@ -369,7 +367,6 @@
         }
       }
 
-      // НЕЛИНЕЙНОЕ ОБНОВЛЕНИЕ ЧЕРЕЗ FEEDBACK (с диффузией)
       updateWithFeedback(positions, keyParams, steps, feedbackValue) {
         const count = (keyParams[0] + feedbackValue) % 10 + 1;
         const start = (keyParams[1] + feedbackValue) % 10;
@@ -391,67 +388,74 @@
       }
 
       encrypt(plaintext, key, useDiffusion = false) {
-        const clean = this.filter(plaintext);
-        if (!clean) return "";
         const { rotors, steps } = this.buildRotorsAndSteps(key);
         const keyParams = this.getKeyParams(key);
         let pos = new Array(10).fill(0);
         let out = "";
 
-        for (let i = 0; i < clean.length; i++) {
-          if (!useDiffusion) {
-            this.updatePositions(pos, keyParams, steps, i);
-          }
+        for (let i = 0; i < plaintext.length; i++) {
+          const char = plaintext[i];
+          if (this.charToIndex.has(char)) {
+            if (!useDiffusion) {
+              this.updatePositions(pos, keyParams, steps, i);
+            }
 
-          let signal = this.charToIndex.get(clean[i]);
-          for (let r = 0; r < 10; r++) {
-            signal = this.forward(signal, rotors[r], pos[r]);
-          }
-          const cipherChar = this.alphabet[signal];
-          out += cipherChar;
+            let signal = this.charToIndex.get(char);
+            for (let r = 0; r < 10; r++) {
+              signal = this.forward(signal, rotors[r], pos[r]);
+            }
+            const cipherChar = this.alphabet[signal];
+            out += cipherChar;
 
-          if (useDiffusion) {
-            this.updateWithFeedback(pos, keyParams, steps, signal);
+            if (useDiffusion) {
+              this.updateWithFeedback(pos, keyParams, steps, signal);
+            }
+          } else {
+            out += char; // ← СОХРАНЯЕМ СИМВОЛ КАК ЕСТЬ
           }
         }
         return out;
       }
 
       decrypt(ciphertext, key, useDiffusion = false) {
-        const clean = this.filter(ciphertext);
-        if (!clean) return "";
         const { rotors, steps } = this.buildRotorsAndSteps(key);
         const keyParams = this.getKeyParams(key);
         let pos = new Array(10).fill(0);
         let out = "";
 
-        for (let i = 0; i < clean.length; i++) {
-          if (!useDiffusion) {
-            this.updatePositions(pos, keyParams, steps, i);
-          }
+        for (let i = 0; i < ciphertext.length; i++) {
+          const char = ciphertext[i];
+          if (this.charToIndex.has(char)) {
+            if (!useDiffusion) {
+              this.updatePositions(pos, keyParams, steps, i);
+            }
 
-          let signal = this.charToIndex.get(clean[i]);
-          for (let r = 9; r >= 0; r--) {
-            signal = this.backward(signal, rotors[r], pos[r]);
-          }
-          const plainChar = this.alphabet[signal];
-          out += plainChar;
+            let signal = this.charToIndex.get(char);
+            for (let r = 9; r >= 0; r--) {
+              signal = this.backward(signal, rotors[r], pos[r]);
+            }
+            const plainChar = this.alphabet[signal];
+            out += plainChar;
 
-          if (useDiffusion) {
-            const cipherSignal = this.charToIndex.get(clean[i]);
-            this.updateWithFeedback(pos, keyParams, steps, cipherSignal);
+            if (useDiffusion) {
+              const cipherSignal = this.charToIndex.get(char);
+              this.updateWithFeedback(pos, keyParams, steps, cipherSignal);
+            }
+          } else {
+            out += char; // ← СОХРАНЯЕМ СИМВОЛ КАК ЕСТЬ
           }
         }
         return out;
       }
 
       entropy(text) {
-        if (!text) return 0;
+        const filtered = text.split('').filter(c => this.charToIndex.has(c)).join('');
+        if (!filtered) return 0;
         const freq = {};
-        for (const c of text) freq[c] = (freq[c] || 0) + 1;
+        for (const c of filtered) freq[c] = (freq[c] || 0) + 1;
         let e = 0;
         for (const p of Object.values(freq)) {
-          const prob = p / text.length;
+          const prob = p / filtered.length;
           e -= prob * Math.log2(prob);
         }
         return e;
@@ -615,4 +619,3 @@
   </script>
 </body>
 </html>
-
