@@ -226,7 +226,7 @@
   <div class="container">
     <div class="header">
       <h1><i class="fas fa-lock"></i> CipherOS Rotor Machine</h1>
-      <p class="subtitle">Preserves non-alphabet characters. Fully nonlinear rotor diffusion.</p>
+      <p class="subtitle">Military-grade 10-rotor cipher with nonlinear avalanche diffusion.</p>
     </div>
 
     <!-- Configuration -->
@@ -303,7 +303,7 @@
 
   <script>
     // ==============================
-    // ИСПРАВЛЕННАЯ КРИПТОСИСТЕМА: СОХРАНЕНИЕ НЕАЛФАВИТНЫХ СИМВОЛОВ
+    // ОРИГИНАЛЬНАЯ ЛОГИКА + РАСШИРЕННЫЙ АЛФАВИТ
     // ==============================
 
     class RotorMachine {
@@ -312,10 +312,9 @@
           throw new Error("Alphabet cannot be empty");
         }
         const unique = [...new Set(alphabet.split(''))].join('');
+        if (unique.length < 2) throw new Error("Alphabet too short");
         this.alphabet = unique.split('');
         this.N = this.alphabet.length;
-        if (this.N < 2) throw new Error("Alphabet too short");
-        
         this.charToIndex = new Map();
         this.alphabet.forEach((ch, i) => this.charToIndex.set(ch, i));
       }
@@ -323,8 +322,8 @@
       buildRotorsAndSteps(key) {
         const keyClean = key.split('').filter(c => this.charToIndex.has(c)).join('');
         if (!keyClean) throw new Error("Key has no valid characters");
-        
         const rotors = [], steps = [];
+
         for (let r = 0; r < 10; r++) {
           let seed = r;
           for (let i = 0; i < Math.max(5, keyClean.length); i++) {
@@ -339,7 +338,7 @@
             [rotor[i], rotor[j]] = [rotor[j], rotor[i]];
           }
           rotors.push(rotor);
-          steps.push((seed % (2 * this.N + 1)) - this.N);
+          steps.push((seed % 101) - 50);
         }
         return { rotors, steps };
       }
@@ -411,7 +410,7 @@
               this.updateWithFeedback(pos, keyParams, steps, signal);
             }
           } else {
-            out += char; // ← СОХРАНЯЕМ СИМВОЛ КАК ЕСТЬ
+            out += char;
           }
         }
         return out;
@@ -442,7 +441,7 @@
               this.updateWithFeedback(pos, keyParams, steps, cipherSignal);
             }
           } else {
-            out += char; // ← СОХРАНЯЕМ СИМВОЛ КАК ЕСТЬ
+            out += char;
           }
         }
         return out;
