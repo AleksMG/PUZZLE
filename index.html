@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CipherOS | True Asynchronous Rotor Machine</title>
+  <title>CipherOS | Stateful Rotor Machine</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -226,7 +226,7 @@
   <div class="container">
     <div class="header">
       <h1><i class="fas fa-lock"></i> CipherOS Rotor Machine</h1>
-      <p class="subtitle">Each symbol passes through all 10 rotors. Only some rotate after — non-sequential, key-dependent.</p>
+      <p class="subtitle">Stateful with optional data-driven update.</p>
     </div>
 
     <!-- Configuration -->
@@ -244,6 +244,14 @@
 
       <label for="input">Input Text</label>
       <textarea id="input" spellcheck="false">HELLO WORLD! This is a test message with numbers 123 and symbols @#$.</textarea>
+
+      <div class="form-group">
+        <label class="form-label">
+          <input type="checkbox" id="dataDrivenMode">
+          Data-Driven State Update (uses output symbol for rotor update)
+        </label>
+        <div class="form-hint">When enabled, any change in ciphertext breaks all subsequent decryption.</div>
+      </div>
 
       <div class="btn-group">
         <button class="btn-encrypt" id="encrypt"><i class="fas fa-lock"></i> Encrypt</button>
@@ -277,6 +285,10 @@
           <div class="stat-value" id="uniqueStat">0</div>
           <div class="stat-label">Unique Chars</div>
         </div>
+        <div class="stat-box">
+          <div class="stat-value" id="modeStat">Positional</div>
+          <div class="stat-label">Mode</div>
+        </div>
       </div>
     </div>
 
@@ -291,7 +303,7 @@
 
   <script>
     // ==============================
-    // TRUE ASYNCHRONOUS ROTOR MACHINE
+    // STATEFUL ROTOR MACHINE WITH DATA-DRIVEN OPTION
     // ==============================
 
     class RotorMachine {
@@ -327,7 +339,6 @@
           }
           rotors.push(rotor);
           
-          // ВАШИ ШАГИ: -50 до +50
           steps.push((seed % 101) - 50);
         }
         return { rotors, steps };
@@ -358,8 +369,7 @@
         return (inPos - off + this.N) % this.N;
       }
 
-      encrypt(plaintext, key) {
-        // Извлекаем только символы из алфавита
+      encrypt(plaintext, key, useDataDriven = false) {
         const clean = [];
         const originalPositions = [];
         for (let i = 0; i < plaintext.length; i++) {
@@ -377,7 +387,6 @@
         const cipherClean = [];
 
         for (let idx = 0; idx < clean.length; idx++) {
-          // 1. Проходим через ВСЕ 10 роторов
           let signal = this.charToIndex.get(clean[idx]);
           for (let r = 0; r < 10; r++) {
             signal = this.forward(signal, rotors[r], pos[r]);
@@ -385,22 +394,27 @@
           const cipherChar = this.alphabet[signal];
           cipherClean.push(cipherChar);
 
-          // 2. ОБНОВЛЕНИЕ: выбираем ПОДМНОЖЕСТВО роторов для вращения
-          const count = (keyParams[0] + idx) % 10 + 1; // 1 to 10
+          // === ОБНОВЛЕНИЕ СОСТОЯНИЯ ===
+          let updateValue;
+          if (useDataDriven) {
+            updateValue = signal; // выходной символ
+          } else {
+            updateValue = idx;    // номер символа
+          }
+
+          const count = (keyParams[0] + updateValue) % 10 + 1;
           const selected = new Set();
-          let seed = keyParams[0] * 10000 + keyParams[1] * 100 + idx;
+          let seed = keyParams[0] * 10000 + keyParams[1] * 100 + updateValue;
           while (selected.size < count) {
             seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
             selected.add(seed % 10);
           }
 
-          // Вращаем ТОЛЬКО выбранные роторы на их шаги
           for (const r of selected) {
             pos[r] = ((pos[r] + steps[r]) % this.N + this.N) % this.N;
           }
         }
 
-        // Восстанавливаем полный текст
         const result = plaintext.split('');
         for (let i = 0; i < cipherClean.length; i++) {
           result[originalPositions[i]] = cipherClean[i];
@@ -408,7 +422,7 @@
         return result.join('');
       }
 
-      decrypt(ciphertext, key) {
+      decrypt(ciphertext, key, useDataDriven = false) {
         const clean = [];
         const originalPositions = [];
         for (let i = 0; i < ciphertext.length; i++) {
@@ -428,7 +442,6 @@
         for (let idx = 0; idx < clean.length; idx++) {
           const cipherSignal = this.charToIndex.get(clean[idx]);
 
-          // 1. Расшифровка через ВСЕ 10 роторов
           let signal = cipherSignal;
           for (let r = 9; r >= 0; r--) {
             signal = this.backward(signal, rotors[r], pos[r]);
@@ -436,10 +449,17 @@
           const plainChar = this.alphabet[signal];
           plainClean.push(plainChar);
 
-          // 2. ТО ЖЕ САМОЕ ОБНОВЛЕНИЕ
-          const count = (keyParams[0] + idx) % 10 + 1;
+          // === ТО ЖЕ САМОЕ ОБНОВЛЕНИЕ ===
+          let updateValue;
+          if (useDataDriven) {
+            updateValue = cipherSignal; // входной шифросимвол
+          } else {
+            updateValue = idx;         // номер символа
+          }
+
+          const count = (keyParams[0] + updateValue) % 10 + 1;
           const selected = new Set();
-          let seed = keyParams[0] * 10000 + keyParams[1] * 100 + idx;
+          let seed = keyParams[0] * 10000 + keyParams[1] * 100 + updateValue;
           while (selected.size < count) {
             seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
             selected.add(seed % 10);
@@ -493,10 +513,12 @@
         this.output = document.getElementById('output');
         this.rotorGrid = document.getElementById('rotorGrid');
         this.status = document.getElementById('status');
+        this.dataDrivenMode = document.getElementById('dataDrivenMode');
 
         this.lenStat = document.getElementById('lengthStat');
         this.entStat = document.getElementById('entropyStat');
         this.uniStat = document.getElementById('uniqueStat');
+        this.modeStat = document.getElementById('modeStat');
       }
 
       bindEvents() {
@@ -507,19 +529,22 @@
 
         this.alphabet.addEventListener('input', () => this.updateAll());
         this.key.addEventListener('input', () => this.updateAll());
+        this.dataDrivenMode.addEventListener('change', () => this.updateModeLabel());
       }
 
       async run(mode) {
+        const useDataDriven = this.dataDrivenMode.checked;
         try {
           const machine = new RotorMachine(this.alphabet.value);
           const result = mode === 'encrypt'
-            ? machine.encrypt(this.input.value, this.key.value)
-            : machine.decrypt(this.input.value, this.key.value);
+            ? machine.encrypt(this.input.value, this.key.value, useDataDriven)
+            : machine.decrypt(this.input.value, this.key.value, useDataDriven);
 
           this.output.textContent = result || '(empty)';
           this.updateAnalysis(result);
           this.showMessage(`${mode === 'encrypt' ? 'Encrypted' : 'Decrypted'} successfully`, 'ok');
           this.updateRotorDisplay(machine);
+          this.updateModeLabel();
         } catch (e) {
           this.output.textContent = '';
           this.updateAnalysis('');
@@ -576,6 +601,7 @@
         try {
           const machine = new RotorMachine(this.alphabet.value);
           this.updateRotorDisplay(machine);
+          this.updateModeLabel();
         } catch (e) {
           this.rotorGrid.innerHTML = `<div style="color:var(--warning);">${e.message}</div>`;
         }
@@ -601,6 +627,11 @@
         } catch (e) {
           this.rotorGrid.innerHTML = `<div style="color:var(--warning);">Set valid key</div>`;
         }
+      }
+
+      updateModeLabel() {
+        const mode = this.dataDrivenMode.checked ? 'Data-Driven' : 'Positional';
+        this.modeStat.textContent = mode;
       }
 
       showMessage(text, type) {
