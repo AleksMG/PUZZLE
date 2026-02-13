@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CipherOS | Professional Rotor Machine</title>
+  <title>CipherOS | True Asynchronous Rotor Machine</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -226,7 +226,7 @@
   <div class="container">
     <div class="header">
       <h1><i class="fas fa-lock"></i> CipherOS Rotor Machine</h1>
-      <p class="subtitle">Military-grade 10-rotor cipher with nonlinear avalanche diffusion.</p>
+      <p class="subtitle">Each symbol passes through all 10 rotors. Only some rotate after — non-sequential, key-dependent.</p>
     </div>
 
     <!-- Configuration -->
@@ -244,14 +244,6 @@
 
       <label for="input">Input Text</label>
       <textarea id="input" spellcheck="false">HELLO WORLD! This is a test message with numbers 123 and symbols @#$.</textarea>
-
-      <div class="form-group">
-        <label class="form-label">
-          <input type="checkbox" id="diffusionMode" checked>
-          Enable Diffusion (Avalanche Effect)
-        </label>
-        <div class="form-hint">When enabled, ciphertext errors propagate to all subsequent characters using nonlinear rotor groups.</div>
-      </div>
 
       <div class="btn-group">
         <button class="btn-encrypt" id="encrypt"><i class="fas fa-lock"></i> Encrypt</button>
@@ -285,10 +277,6 @@
           <div class="stat-value" id="uniqueStat">0</div>
           <div class="stat-label">Unique Chars</div>
         </div>
-        <div class="stat-box">
-          <div class="stat-value" id="modeStat">Avalanche</div>
-          <div class="stat-label">Mode</div>
-        </div>
       </div>
     </div>
 
@@ -303,7 +291,7 @@
 
   <script>
     // ==============================
-    // ОРИГИНАЛЬНАЯ ЛОГИКА + РАСШИРЕННЫЙ АЛФАВИТ
+    // TRUE ASYNCHRONOUS ROTOR MACHINE
     // ==============================
 
     class RotorMachine {
@@ -338,6 +326,8 @@
             [rotor[i], rotor[j]] = [rotor[j], rotor[i]];
           }
           rotors.push(rotor);
+          
+          // ВАШИ ШАГИ: -50 до +50
           steps.push((seed % 101) - 50);
         }
         return { rotors, steps };
@@ -357,24 +347,6 @@
         return params;
       }
 
-      updatePositions(positions, keyParams, steps, position) {
-        const count = (keyParams[0] + position) % 10 + 1;
-        const start = (keyParams[1] + position) % 10;
-        for (let i = 0; i < count; i++) {
-          const rotorIndex = (start + i) % 10;
-          positions[rotorIndex] = ((positions[rotorIndex] + steps[rotorIndex]) % this.N + this.N) % this.N;
-        }
-      }
-
-      updateWithFeedback(positions, keyParams, steps, feedbackValue) {
-        const count = (keyParams[0] + feedbackValue) % 10 + 1;
-        const start = (keyParams[1] + feedbackValue) % 10;
-        for (let i = 0; i < count; i++) {
-          const rotorIndex = (start + i) % 10;
-          positions[rotorIndex] = ((positions[rotorIndex] + steps[rotorIndex]) % this.N + this.N) % this.N;
-        }
-      }
-
       forward(sig, rotor, off) {
         const inRot = (sig + off) % this.N;
         return (rotor[inRot] - off + this.N) % this.N;
@@ -386,65 +358,103 @@
         return (inPos - off + this.N) % this.N;
       }
 
-      encrypt(plaintext, key, useDiffusion = false) {
+      encrypt(plaintext, key) {
+        // Извлекаем только символы из алфавита
+        const clean = [];
+        const originalPositions = [];
+        for (let i = 0; i < plaintext.length; i++) {
+          if (this.charToIndex.has(plaintext[i])) {
+            clean.push(plaintext[i]);
+            originalPositions.push(i);
+          }
+        }
+
+        if (clean.length === 0) return plaintext;
+
         const { rotors, steps } = this.buildRotorsAndSteps(key);
         const keyParams = this.getKeyParams(key);
         let pos = new Array(10).fill(0);
-        let out = "";
+        const cipherClean = [];
 
-        for (let i = 0; i < plaintext.length; i++) {
-          const char = plaintext[i];
-          if (this.charToIndex.has(char)) {
-            if (!useDiffusion) {
-              this.updatePositions(pos, keyParams, steps, i);
-            }
+        for (let idx = 0; idx < clean.length; idx++) {
+          // 1. Проходим через ВСЕ 10 роторов
+          let signal = this.charToIndex.get(clean[idx]);
+          for (let r = 0; r < 10; r++) {
+            signal = this.forward(signal, rotors[r], pos[r]);
+          }
+          const cipherChar = this.alphabet[signal];
+          cipherClean.push(cipherChar);
 
-            let signal = this.charToIndex.get(char);
-            for (let r = 0; r < 10; r++) {
-              signal = this.forward(signal, rotors[r], pos[r]);
-            }
-            const cipherChar = this.alphabet[signal];
-            out += cipherChar;
+          // 2. ОБНОВЛЕНИЕ: выбираем ПОДМНОЖЕСТВО роторов для вращения
+          const count = (keyParams[0] + idx) % 10 + 1; // 1 to 10
+          const selected = new Set();
+          let seed = keyParams[0] * 10000 + keyParams[1] * 100 + idx;
+          while (selected.size < count) {
+            seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
+            selected.add(seed % 10);
+          }
 
-            if (useDiffusion) {
-              this.updateWithFeedback(pos, keyParams, steps, signal);
-            }
-          } else {
-            out += char;
+          // Вращаем ТОЛЬКО выбранные роторы на их шаги
+          for (const r of selected) {
+            pos[r] = ((pos[r] + steps[r]) % this.N + this.N) % this.N;
           }
         }
-        return out;
+
+        // Восстанавливаем полный текст
+        const result = plaintext.split('');
+        for (let i = 0; i < cipherClean.length; i++) {
+          result[originalPositions[i]] = cipherClean[i];
+        }
+        return result.join('');
       }
 
-      decrypt(ciphertext, key, useDiffusion = false) {
+      decrypt(ciphertext, key) {
+        const clean = [];
+        const originalPositions = [];
+        for (let i = 0; i < ciphertext.length; i++) {
+          if (this.charToIndex.has(ciphertext[i])) {
+            clean.push(ciphertext[i]);
+            originalPositions.push(i);
+          }
+        }
+
+        if (clean.length === 0) return ciphertext;
+
         const { rotors, steps } = this.buildRotorsAndSteps(key);
         const keyParams = this.getKeyParams(key);
         let pos = new Array(10).fill(0);
-        let out = "";
+        const plainClean = [];
 
-        for (let i = 0; i < ciphertext.length; i++) {
-          const char = ciphertext[i];
-          if (this.charToIndex.has(char)) {
-            if (!useDiffusion) {
-              this.updatePositions(pos, keyParams, steps, i);
-            }
+        for (let idx = 0; idx < clean.length; idx++) {
+          const cipherSignal = this.charToIndex.get(clean[idx]);
 
-            let signal = this.charToIndex.get(char);
-            for (let r = 9; r >= 0; r--) {
-              signal = this.backward(signal, rotors[r], pos[r]);
-            }
-            const plainChar = this.alphabet[signal];
-            out += plainChar;
+          // 1. Расшифровка через ВСЕ 10 роторов
+          let signal = cipherSignal;
+          for (let r = 9; r >= 0; r--) {
+            signal = this.backward(signal, rotors[r], pos[r]);
+          }
+          const plainChar = this.alphabet[signal];
+          plainClean.push(plainChar);
 
-            if (useDiffusion) {
-              const cipherSignal = this.charToIndex.get(char);
-              this.updateWithFeedback(pos, keyParams, steps, cipherSignal);
-            }
-          } else {
-            out += char;
+          // 2. ТО ЖЕ САМОЕ ОБНОВЛЕНИЕ
+          const count = (keyParams[0] + idx) % 10 + 1;
+          const selected = new Set();
+          let seed = keyParams[0] * 10000 + keyParams[1] * 100 + idx;
+          while (selected.size < count) {
+            seed = (seed * 1664525 + 1013904223) & 0x7FFFFFFF;
+            selected.add(seed % 10);
+          }
+
+          for (const r of selected) {
+            pos[r] = ((pos[r] + steps[r]) % this.N + this.N) % this.N;
           }
         }
-        return out;
+
+        const result = ciphertext.split('');
+        for (let i = 0; i < plainClean.length; i++) {
+          result[originalPositions[i]] = plainClean[i];
+        }
+        return result.join('');
       }
 
       entropy(text) {
@@ -483,13 +493,10 @@
         this.output = document.getElementById('output');
         this.rotorGrid = document.getElementById('rotorGrid');
         this.status = document.getElementById('status');
-        this.diffusionMode = document.getElementById('diffusionMode');
 
-        // Stats
         this.lenStat = document.getElementById('lengthStat');
         this.entStat = document.getElementById('entropyStat');
         this.uniStat = document.getElementById('uniqueStat');
-        this.modeStat = document.getElementById('modeStat');
       }
 
       bindEvents() {
@@ -500,22 +507,19 @@
 
         this.alphabet.addEventListener('input', () => this.updateAll());
         this.key.addEventListener('input', () => this.updateAll());
-        this.diffusionMode.addEventListener('change', () => this.updateModeLabel());
       }
 
       async run(mode) {
-        const useDiffusion = this.diffusionMode.checked;
         try {
           const machine = new RotorMachine(this.alphabet.value);
           const result = mode === 'encrypt'
-            ? machine.encrypt(this.input.value, this.key.value, useDiffusion)
-            : machine.decrypt(this.input.value, this.key.value, useDiffusion);
+            ? machine.encrypt(this.input.value, this.key.value)
+            : machine.decrypt(this.input.value, this.key.value);
 
           this.output.textContent = result || '(empty)';
           this.updateAnalysis(result);
           this.showMessage(`${mode === 'encrypt' ? 'Encrypted' : 'Decrypted'} successfully`, 'ok');
           this.updateRotorDisplay(machine);
-          this.updateModeLabel();
         } catch (e) {
           this.output.textContent = '';
           this.updateAnalysis('');
@@ -572,7 +576,6 @@
         try {
           const machine = new RotorMachine(this.alphabet.value);
           this.updateRotorDisplay(machine);
-          this.updateModeLabel();
         } catch (e) {
           this.rotorGrid.innerHTML = `<div style="color:var(--warning);">${e.message}</div>`;
         }
@@ -598,11 +601,6 @@
         } catch (e) {
           this.rotorGrid.innerHTML = `<div style="color:var(--warning);">Set valid key</div>`;
         }
-      }
-
-      updateModeLabel() {
-        const mode = this.diffusionMode.checked ? 'Avalanche' : 'Positional';
-        this.modeStat.textContent = mode;
       }
 
       showMessage(text, type) {
